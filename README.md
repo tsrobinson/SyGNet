@@ -1,7 +1,8 @@
 # SyGNet
 
-Synthetic data using Generative Adversarial Networks
- -- Dr Thomas Robinson (PI), Maksim Zubok, Artem Nesterov
+## Synthetic data using Generative Adversarial Networks
+
+Dr Thomas Robinson (PI), Maksim Zubok, Artem Nesterov
 
 ---
 
