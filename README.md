@@ -6,6 +6,6 @@ Dr Thomas Robinson (PI), Maksim Zubok, Artem Nesterov
 
 ---
 
-Currently in development (coming Summer 2022)
+**Currently in development (coming Summer 2022)**
 
-<img src="sygnet.png" alt="SyGNet Mascot" width= 80% class="center"/>
+<img src="sygnet.png" alt="SyGNet Mascot" width= 100%/>
