@@ -1,0 +1,53 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "sygnet"
+authors = [
+    {name = "Thomas Robinson", email = "thomas.robinson@durham.ac.uk"},
+]
+maintainers = [
+    {name = "Thomas Robinson", email = "thomas.robinson@durham.ac.uk"},
+    {name = "Artem Nesterov"},
+    {name = "Maksim Zubok"},
+]
+
+version = "0.0.1"
+description = "Synthetic data using Generative Adversarial Networks"
+keywords = [
+    "synthetic data", 
+    "neural networks", 
+    "GAN",
+    "torch",
+]
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+]
+dependencies = [
+    "numpy>=1.20",
+    "torch>=1.11.0",
+    "scikit-learn>=1.0",
+    "pandas>=1.4",
+    "datetime",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+vis = [
+    "tensorboard",
+]
+
+[project.urls]
+Source = "https://github.com/tsrobinson/SyGNet"
+Bugs = "https://github.com/tsrobinson/SyGNet/issues"
+
+[tool.flit.module]
+name = "sygnet"
