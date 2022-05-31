@@ -362,4 +362,6 @@ class SygnetModel:
 
         return synth_output
 
+    # Alias for sample to fit sklearn pipeline
+    transform = sample
 
