@@ -25,6 +25,16 @@ To install via pip, you can run the following command at the command line:
 
 You can find a demonstration of **sygnet** under [examples/basic_example](examples/basic_example.ipynb).
 
-### Version 0.0.1 (Alpha release)
+### Current version: 0.0.2 (alpha release)
 
-Our first release! This version has been lightly tested and the core functionality has been implemented. You should expect both functionality and architecture to change considerably. Comments and bug reports are very welcome!
+**Alpha release**: You should expect both functionality and pipielines to change substantially (and rapidly). Comments and bug reports are very welcome!
+
+Changes:
+
+* Fixes mixaed activation bug where final layer wasn't sent to `device`
+* Adds `SygnetModel.transform()` alias for `SygnetModel.sample()`
+
+### Previous releases
+
+**0.0.1**
+Our first release! This version has been lightly tested and the core functionality has been implemented. 
