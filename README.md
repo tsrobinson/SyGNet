@@ -31,7 +31,7 @@ You can find a demonstration of **sygnet** under [examples/basic_example](exampl
 
 Changes:
 
-* Fixes mixaed activation bug where final layer wasn't sent to `device`
+* Fixes mixed activation bug where final layer wasn't sent to `device`
 * Adds `SygnetModel.transform()` alias for `SygnetModel.sample()`
 
 ### Previous releases
