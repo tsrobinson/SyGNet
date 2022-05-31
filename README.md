@@ -21,6 +21,10 @@ To install via pip, you can run the following command at the command line:
     datetime
     tqdm
 
+### Example implementation
+
+You can find a demonstration of **sygnet** under [examples/basic_example](examples/basic_example.ipynb).
+
 ### Version 0.0.1 (Alpha release)
 
 Our first release! This version has been lightly tested and the core functionality has been implemented. You should expect both functionality and architecture to change considerably. Comments and bug reports are very welcome!
