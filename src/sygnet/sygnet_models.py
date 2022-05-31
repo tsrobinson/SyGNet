@@ -8,35 +8,36 @@ class _MixedActivation(nn.Module):
     Args:
         indices (list of lists): Positions of data types. 
         funcs (list of strs): Corresponding list of activation functions       
-        identity (nn.Module): Placeholder for identity function (itself a placeholder)
+        device (str): Model device for use in forward()
 
     Notes:
         Relies on _preprocessing() from sygnet_dataloaders to pre-sort and format data.
 
     """
 
-    __constants__ = ['indices', 'funcs']
+    __constants__ = ['indices', 'funcs', 'device']
     inplace: list
     funcs: list
-    def __init__(self, indices, funcs):
+    def __init__(self, indices, funcs, device):
         super(_MixedActivation, self).__init__()
         if any(item not in ['identity','relu','sigmoid','softmax'] for item in set(funcs)):
             logger.error("Cannot construct output layer: unrecognised mixed activation functional")
         self.indices = indices
         self.funcs = funcs
         self.identity = nn.Identity()
+        self.device = device
         
     def forward(self, input: Tensor) -> Tensor:
         mixed_out = []
         for number, index_ in enumerate(self.indices):
             if self.funcs[number] == 'softmax':
-                mixed_out.append(nn.functional.softmax(torch.index_select(input, 1, index_.type(torch.int32)), dim=1))
+                mixed_out.append(nn.functional.softmax(torch.index_select(input, 1, index_.type(torch.int32).to(self.device)), dim=1))
             elif self.funcs[number] == 'relu':
-                mixed_out.append(nn.functional.relu(torch.index_select(input, 1, index_.type(torch.int32))))
+                mixed_out.append(nn.functional.relu(torch.index_select(input, 1, index_.type(torch.int32).to(self.device))))
             elif self.funcs[number] == 'sigmoid':
-                mixed_out.append(torch.sigmoid(torch.index_select(input, 1, index_.type(torch.int32))))
+                mixed_out.append(torch.sigmoid(torch.index_select(input, 1, index_.type(torch.int32).to(self.device))))
             elif self.funcs[number] == 'identity':
-                mixed_out.append(self.identity(torch.index_select(input, 1, index_.type(torch.int32))))
+                mixed_out.append(self.identity(torch.index_select(input, 1, index_.type(torch.int32).to(self.device))))
         return torch.cat(mixed_out,1)
 
 
@@ -53,6 +54,7 @@ class Generator(nn.Module):
         dropout_p (float): The proportion of hidden nodes to be dropped randomly during training
         relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions (default = 0.1; note: this default is an order larger than torch default.)
         layer_norm (boolean): Whether to include layer normalization in network (default = True)
+        device (str): Either 'cuda' or 'cpu', used to correctly initialise mixed activation layer (default = 'cpu')
 
     Attributes:
         output_size (int): The number of output nodes
@@ -67,7 +69,19 @@ class Generator(nn.Module):
 
     """
 
-    def __init__(self, input_size, hidden_sizes, output_size, mixed_activation = True, mix_act_indices = None, mix_act_funcs = None, dropout_p = 0.2, layer_norm = True, relu_alpha = 0.1):
+    def __init__(
+        self, 
+        input_size, 
+        hidden_sizes, 
+        output_size, 
+        mixed_activation, 
+        mix_act_indices = None, 
+        mix_act_funcs = None, 
+        dropout_p = 0.2, 
+        layer_norm = True, 
+        relu_alpha = 0.1, 
+        device = 'cpu'
+        ):
         super(Generator, self).__init__()
         self.output_size = output_size
         self.node_sizes = [input_size] + hidden_sizes + [output_size]
@@ -100,7 +114,7 @@ class Generator(nn.Module):
                 )
         
         if mixed_activation:
-            self.out = _MixedActivation(mix_act_indices, mix_act_funcs)
+            self.out = _MixedActivation(mix_act_indices, mix_act_funcs, device)
         else:
             self.out = nn.Identity()
             logger.warning("Not using mixed activation function -- generated data may not conform to real data if it contains categorical columns.")

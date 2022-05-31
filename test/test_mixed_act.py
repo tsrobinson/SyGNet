@@ -21,7 +21,7 @@ class TestSum(unittest.TestCase):
                 super().__init__()
                 self.lin1 = nn.Linear(input_size, 200)
                 self.lin2 = nn.Linear(200,70)
-                self.out_mix = _MixedActivation(indices, funcs)
+                self.out_mix = _MixedActivation(indices, funcs, device='cpu')
 
             def forward(self, x):
                 x = self.lin1(x)

@@ -119,7 +119,7 @@ class SygnetModel:
             data (str or pd.DataFrame): Real data used to train GAN, can be a filepath or Pandas DataFrame
             cond_cols (list of colnames): Column names that indicate conditioning variables
             epochs (int): Number of training epochs
-            device (str): Either 'cuda' for GPU training, or 'cpu'.
+            device (str): Either 'cuda' for GPU training, or 'cpu' (default='cpu')
             batch_size (int): Number of training observations per batch (default = None). If left at default, the batch size is set to 1/20th of the overall length of the data.
             learning_rate (float): The learning rate for the Adam optimizer (default = 0.0001)
             adam_betas (tuple): The beta parameters for the Adam optimizer, only used in wgan and cgan modes
@@ -171,7 +171,8 @@ class SygnetModel:
                 mix_act_funcs=torch_data.x_funcs,
                 dropout_p = self.gen_dropout,
                 layer_norm = self.gen_ln,
-                relu_alpha=self.gen_leak
+                relu_alpha=self.gen_leak,
+                device=device
                 )
 
             if self.mode == "basic":
