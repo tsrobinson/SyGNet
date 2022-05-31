@@ -1,4 +1,4 @@
-# SyGNet<img src="sygnet.png" alt="SyGNet Mascot" align="right" height="300" /></a>
+# SyGNet<img src="sygnet.png" alt="SyGNet Mascot" align="right" width="20%" /></a>
 
 ## **Sy**nthetic data using **G**enerative Adversarial **Net**works
 
