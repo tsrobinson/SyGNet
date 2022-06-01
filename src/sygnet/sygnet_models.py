@@ -38,7 +38,9 @@ class _MixedActivation(nn.Module):
                 mixed_out.append(torch.sigmoid(torch.index_select(input, 1, index_.type(torch.int32).to(self.device))))
             elif self.funcs[number] == 'identity':
                 mixed_out.append(self.identity(torch.index_select(input, 1, index_.type(torch.int32).to(self.device))))
-        return torch.cat(mixed_out,1)
+
+        col_order = torch.argsort(torch.cat(self.indices))
+        return torch.cat(mixed_out,1)[:,col_order]
 
 
 class Generator(nn.Module):
