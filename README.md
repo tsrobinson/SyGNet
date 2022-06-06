@@ -25,16 +25,21 @@ To install via pip, you can run the following command at the command line:
 
 You can find a demonstration of **sygnet** under [examples/basic_example](examples/basic_example.ipynb).
 
-### Current version: 0.0.2 (alpha release)
+### Current version: 0.0.3 (alpha release)
 
 **Alpha release**: You should expect both functionality and pipelines to change (rapidly). Comments and bug reports are very welcome!
 
 Changes:
 
-* Fixes mixed activation bug where final layer wasn't sent to `device`
-* Adds `SygnetModel.transform()` alias for `SygnetModel.sample()`
+* Fixes column ordering issue when using mixed activation layer
+* Updates example
+
 
 ### Previous releases
+
+**0.0.2**
+* Fixes mixed activation bug where final layer wasn't sent to `device`
+* Adds `SygnetModel.transform()` alias for `SygnetModel.sample()`
 
 **0.0.1**
 Our first release! This version has been lightly tested and the core functionality has been implemented. 

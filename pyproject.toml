@@ -13,7 +13,7 @@ maintainers = [
     {name = "Maksim Zubok"},
 ]
 
-version = "0.0.2"
+version = "0.0.3"
 description = "Synthetic data using Generative Adversarial Networks"
 keywords = [
     "synthetic data", 
