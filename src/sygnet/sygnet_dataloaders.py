@@ -7,7 +7,7 @@ class GeneratedData(Dataset):
     """Formats processed data for GAN training, optionally using the conditional infrastructure
 
     Args:
-        real_data (str or np.ndarray): If a string is supplied, the file location of the data. Otherwise, an ndarray of training data
+        real_data (str or pd.DataFrame): If a string is supplied, the file location of the data. Otherwise, a pd.DataFrame of training data
         conditional (bool): Whether or not to format data for conditional GAN architecture (default = False)
         cond_cols (list of colnames): If conditional is True, the column names of the real data that should serve as the conditional labels in the model  
 
