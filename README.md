@@ -6,6 +6,8 @@
 
 *Research team: Artem Nesterov, Maksim Zubok*
 
+![example workflow](https://github.com/tsrobinson/SyGNet/actions/workflows/python-app.yml/badge.svg)
+
 **sygnet** is a Python package for generating synthetic data within social science contexts. The **sygnet** algorithm uses cutting-edge advances in deep learning methods to learn the underlying relationships between variables in a dataset. Users can then generate brand-new, synthetic observations that mimic the real data.
 
 ### Installation
