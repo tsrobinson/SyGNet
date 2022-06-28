@@ -19,6 +19,8 @@ class TestSum(unittest.TestCase):
         """
         Test tuner
         """
+
+        print(self.input_data.head())
         
         tuning_results = tune(
             parameter_dict = {'hidden_nodes':[[32,32],[32]], 'dropout_p':[0.1,0.2]},
@@ -33,5 +35,5 @@ class TestSum(unittest.TestCase):
             seed = 89,
             device = 'cpu')
 
-        self.aasertEqual(tuning_results.shape[0], 4)
+        self.assertEqual(tuning_results.shape[0], 4)
         

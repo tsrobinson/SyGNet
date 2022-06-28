@@ -76,7 +76,7 @@ def _preprocess_df(df):
     '''
     # 1. get categorical colum names
     num_type = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']  # numeric columns
-    str_type = 'O'  # select desired data type: 'O' - string
+    str_type = ['O','category','string']  # select desired data type: 'O' - string
     categorical_cols = []
     binary_cols = []
     positive_cols = []
@@ -84,7 +84,7 @@ def _preprocess_df(df):
     dtypes = df.dtypes.to_dict()
 
     for colname, data_type in dtypes.items():
-        if data_type == str_type:
+        if data_type in str_type:
             categorical_cols.append(colname)
         elif data_type in num_type:
             if set(df[colname].unique()) == {1,0}:

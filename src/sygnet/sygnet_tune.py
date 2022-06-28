@@ -29,7 +29,7 @@ def tune(
         Args:
             parameter_dict (dict): A dictionary of hyperparameter arguments and list of values to try. Currently, this function supports tuning the following parameters: `hidden_nodes`, `dropout_p`,`layer_norms`,`relu_leak`, `batch_size,`learning_rate`, and `adam_betas`"
             data (str or pd.DataFrame): Real data used to train GAN, can be a filepath or Pandas DataFrame
-            test_func (func): Function used to assess the quality of the model. This can be any custom function, but must have a `data` argument (which will be a pd.DataFrame) and a `model` argument (which will be a SygnetModel())
+            test_func (func): Function used to assess the quality of the model. This can be any custom function, but must accept a `model` argument which will be a trained SygnetModel()
             runs (int): Number of hyperparameter combinations to try
             model_opts (dict): Dictionary of fixed arguments to pass to SygnetModel().
             fit_opts (dict): Dictionary of fixed arguments to pass to SygnetModel.fit().
@@ -94,9 +94,7 @@ def tune(
                 epochs = epochs,
                 device = device)
 
-            synth_data = sygnet_model.sample(n)
-
-            k_out = test_func(data = synth_data, model = sygnet_model, **test_opts)
+            k_out = test_func(model = sygnet_model, **test_opts)
 
             tuning_results.append([i, kth_idx, k_out] + list(model_dict_chosen.values()) + list(fit_dict_chosen.values()))
         
@@ -106,12 +104,12 @@ def tune(
     return tuning_results
 
 
-def critic_loss(data, model, conditional = False, cond_cols = None, batch_size = None, device = 'cpu'):
+def critic_loss(model, n = 100, conditional = False, cond_cols = None, batch_size = None, device = 'cpu'):
     """Helper function to calculate validation W-loss 
 
         Args:
-            data (str or pd.DataFrame): Real data used to train GAN, can be a filepath or Pandas DataFrame
             critic_model (func): Critic model
+            n (int): Number of observations to sample from the trained SyGNet model
             generator_model (int): Generator model
             conditional (bool): Whether or not to format data for conditional GAN architecture (default = False)
             cond_cols (list of colnames): If conditional is True, the column names of the real data that should serve as the conditional labels in the model  
@@ -122,14 +120,17 @@ def critic_loss(data, model, conditional = False, cond_cols = None, batch_size =
             pd.DataFrame of hyperparameter tuning results, with k observations per sample of hyperparameter values
 
     """
+
+    data = model.sample(n, decode = False, as_pandas = True)
+
     bs_loss = int(np.floor(data.shape[0]/20)) if batch_size is None else batch_size
 
     if conditional:
-        data_conv = GeneratedData(data, conditional=True, cond_cols = cond_cols)
+        data = GeneratedData(data, conditional=True, cond_cols = cond_cols)
     else:
-        data_conv = GeneratedData(data)
+        data = GeneratedData(data)
 
-    data_loader = DataLoader(dataset = data_conv, batch_size=bs_loss, shuffle=True)
+    data_loader = DataLoader(dataset = data, batch_size=bs_loss, shuffle=True)
 
     total_critic_loss = 0
 
@@ -160,4 +161,4 @@ def critic_loss(data, model, conditional = False, cond_cols = None, batch_size =
         # Add losses to epoch tracker (for reporting)
         total_critic_loss += error_critic.item()*gen_obs
 
-    return total_critic_loss/data.shape[0]
+    return total_critic_loss/n
