@@ -316,7 +316,6 @@ class SygnetModel:
             if self.mode == "cgan":
                 synth_output = np.column_stack([synth_output, np.array(labels)])
                 out_col_order = self.colnames[:-len(labels.columns)] + labels.columns.tolist()
-                # synth_output = np.column_stack([synth_output, np.array(labels if labels is not None else seed_labels)])
         else:
             X_cat_cols = _ohe_colnames(self.data_encoders[0])
             labels_cat_cols =  []

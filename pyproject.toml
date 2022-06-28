@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-vis = [
+viz = [
     "tensorboard",
 ]
 
