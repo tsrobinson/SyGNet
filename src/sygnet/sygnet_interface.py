@@ -232,10 +232,6 @@ class SygnetModel:
                 learning_rate = learning_rate,
                 use_tensorboard = use_tensorboard
             )
-            if save_model == True:
-                pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"), 'wb'))
-            return None
-
         elif self.mode == "wgan":
             train_wgan(
                 training_data = torch_data, 
@@ -249,10 +245,6 @@ class SygnetModel:
                 lmbda = lmbda,
                 use_tensorboard = use_tensorboard
             )
-            if save_model == True:
-                pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"), 'wb'))
-            return None
-
         elif self.mode == "cgan":
             train_conditional(
                 training_data = torch_data, 
@@ -266,9 +258,10 @@ class SygnetModel:
                 lmbda = lmbda,
                 use_tensorboard = use_tensorboard
             )
-            if save_model == True:
-                pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"), 'wb'))
-            return None
+            
+        if save_model:
+            pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"), 'wb'))
+        return None
 
     def sample(self, nobs, labels = None, file = None, decode = True, as_pandas = True,  **kwargs):
         """Generate synthetic data 
