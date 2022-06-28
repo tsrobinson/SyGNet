@@ -222,7 +222,7 @@ class SygnetModel:
             batch_size = int(np.floor(data.shape[0]/20))
 
         if self.mode == "basic":
-            return train_basic(
+            train_basic(
                 training_data = torch_data, 
                 generator = self.generator, 
                 discriminator = self.discriminator,
@@ -231,9 +231,13 @@ class SygnetModel:
                 batch_size = batch_size,
                 learning_rate = learning_rate,
                 use_tensorboard = use_tensorboard
-            ), pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"),'wb')) if save_model == True else datetime.now()
+            )
+            if save_model == True:
+                pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"), 'wb'))
+            return None
+
         elif self.mode == "wgan":
-            return train_wgan(
+            train_wgan(
                 training_data = torch_data, 
                 generator = self.generator, 
                 critic = self.discriminator,
@@ -244,9 +248,13 @@ class SygnetModel:
                 adam_betas = adam_betas,
                 lmbda = lmbda,
                 use_tensorboard = use_tensorboard
-            ), pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"),'wb')) if save_model == True else datetime.now()
+            )
+            if save_model == True:
+                pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"), 'wb'))
+            return None
+
         elif self.mode == "cgan":
-            return train_conditional(
+            train_conditional(
                 training_data = torch_data, 
                 generator = self.generator, 
                 critic = self.discriminator,
@@ -257,8 +265,11 @@ class SygnetModel:
                 adam_betas = adam_betas,
                 lmbda = lmbda,
                 use_tensorboard = use_tensorboard
-            ), pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"),'wb')) if save_model == True else datetime.now()
-    
+            )
+            if save_model == True:
+                pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"), 'wb'))
+            return None
+
     def sample(self, nobs, labels = None, file = None, decode = True, as_pandas = True,  **kwargs):
         """Generate synthetic data 
 
