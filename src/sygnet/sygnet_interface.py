@@ -1,8 +1,11 @@
 ## USER INTERFACE
+import logging
+
 from .sygnet_requirements import *
 from .sygnet_models import *
 from .sygnet_train import *
 from .sygnet_dataloaders import GeneratedData, _ohe_colnames
+import os.path
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +114,9 @@ class SygnetModel:
         learning_rate = 0.0001,
         adam_betas = (0.0, 0.9),
         lmbda = 10,
-        use_tensorboard = False
+        use_tensorboard = False,
+        save_model = False,
+        save_loc = None
         ):
         """Fit the SyGNet model to the training data
 
@@ -142,7 +147,21 @@ class SygnetModel:
         elif cond_cols is None and self.mode == "cgan":
             logger.warning(f"Model mode is set to '{self.mode}' but no columns specified in 'cond_cols'. Switching to WGAN architecture.")
             self.mode = "wgan"
-        
+
+        # Set file path and static part of filename
+        if save_model == True:
+            if not isinstance(save_loc, str):
+                logger.error("Argument `save_loc` must contain a full directory path as an 'r' string. For example: save_loc = r'C:/Folder/SyGNet/'")
+                logger.error("Model will not be saved")
+            elif save_loc == None:
+                logger.error("Argument `save_loc` must contain a full directory path as an 'r' string. For example: save_loc = r'C:/Folder/SyGNet/'")
+                logger.error("Model will not be saved")
+            elif os.path.exists(save_loc) == False:
+                logger.error("Argument `save_loc` must contain a full directory path as an 'r' string. For example: save_loc = r'C:/Folder/SyGNet/'")
+                logger.error("Model will not be saved")
+            else:
+                logger.error("Model will be saved to: " + save_loc)
+                filepath = save_loc + "\\SavedModel_"
 
         # Convert data dependent on model type
         if self.mode != "cgan":
@@ -203,7 +222,7 @@ class SygnetModel:
             batch_size = int(np.floor(data.shape[0]/20))
 
         if self.mode == "basic":
-            return train_basic(
+            train_basic(
                 training_data = torch_data, 
                 generator = self.generator, 
                 discriminator = self.discriminator,
@@ -213,8 +232,12 @@ class SygnetModel:
                 learning_rate = learning_rate,
                 use_tensorboard = use_tensorboard
             )
+            if save_model == True:
+                pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"), 'wb'))
+            return None
+
         elif self.mode == "wgan":
-            return train_wgan(
+            train_wgan(
                 training_data = torch_data, 
                 generator = self.generator, 
                 critic = self.discriminator,
@@ -226,8 +249,12 @@ class SygnetModel:
                 lmbda = lmbda,
                 use_tensorboard = use_tensorboard
             )
+            if save_model == True:
+                pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"), 'wb'))
+            return None
+
         elif self.mode == "cgan":
-            return train_conditional(
+            train_conditional(
                 training_data = torch_data, 
                 generator = self.generator, 
                 critic = self.discriminator,
@@ -239,7 +266,10 @@ class SygnetModel:
                 lmbda = lmbda,
                 use_tensorboard = use_tensorboard
             )
-    
+            if save_model == True:
+                pickle.dump(self, open(filepath + datetime.now().strftime("%d%b%y_%H%M"), 'wb'))
+            return None
+
     def sample(self, nobs, labels = None, file = None, decode = True, as_pandas = True,  **kwargs):
         """Generate synthetic data 
 

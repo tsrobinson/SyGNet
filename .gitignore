@@ -1,5 +1,4 @@
-
-.idea/workspace.xml
+.idea/**
 outputs/*
-local_tests/*
+local_tests/**
 .ipynb_checkpoints/*
