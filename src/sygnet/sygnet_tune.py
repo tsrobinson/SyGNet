@@ -1,6 +1,4 @@
 from .sygnet_requirements import *
-from .sygnet_models import *
-from .sygnet_train import *
 from .sygnet_dataloaders import GeneratedData
 from .sygnet_interface import SygnetModel
 
