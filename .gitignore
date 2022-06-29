@@ -3,3 +3,4 @@ outputs/*
 local_tests/**
 .ipynb_checkpoints/*
 test/__pychache__/*
+src/sygnet/__pychache__/*
