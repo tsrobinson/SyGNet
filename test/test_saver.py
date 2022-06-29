@@ -27,8 +27,7 @@ class TestSum(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdirname:
             model0.fit(self.input_data, epochs = 1, save_model=True, save_loc = r"{}".format(tmpdirname))
             new_file = os.listdir(tmpdirname)[0]
-            print(tmpdirname + "/" + new_file)
-            model1 = load(tmpdirname + "/" + new_file)
+            model1 = load(Path(tmpdirname) / new_file)
 
         self.assertTrue(
             torch.equal(
