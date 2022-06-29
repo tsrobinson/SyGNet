@@ -117,7 +117,7 @@ class SygnetModel:
         lmbda = 10,
         use_tensorboard = False,
         save_model = False,
-        save_loc = None,
+        save_loc = "",
         save_prefix = "sygnet_model_"
         ):
         """Fit the SyGNet model to the training data
@@ -132,6 +132,9 @@ class SygnetModel:
             adam_betas (tuple): The beta parameters for the Adam optimizer, only used in wgan and cgan modes
             lmbda (float): Scalar penalty term for applying gradient penalty as part of Wasserstein loss, only used in wgan and cgan modes
             use_tensorboard (boolean): If True, creates tensorboard output capturing key training metrics (default = True)
+            save_model (bool): Whether or not to save the model after training (default = False)
+            save_loc (str): If save_model is True, the filepath where the directory should be saved (default = current working directory). Note, on Windows users should use raw strings (i.e. r"C:..." to avoid backslash escape issues)
+            save_prefix (str): File prefix for the saved model (default = "sygnet_model_"). The full filename will be save_prefix + "DDMMMYY_HHMM"
 
         Note: 
             The generator and discriminator/critic model are modified in-place
