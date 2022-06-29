@@ -1,1 +1,1 @@
-from .sygnet_interface import *
+from .interface import *
