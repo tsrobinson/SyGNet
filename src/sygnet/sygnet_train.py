@@ -1,6 +1,5 @@
 ### TRAINING FUNCTIONS
 from .sygnet_requirements import *
-from .sygnet_models import *
 
 logger = logging.getLogger(__name__)
 
