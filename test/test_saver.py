@@ -1,6 +1,6 @@
-from src.sygnet.sygnet_requirements import *
-from src.sygnet.sygnet_interface import *
-from src.sygnet.sygnet_loader import *
+from src.sygnet.requirements import *
+from src.sygnet.interface import *
+from src.sygnet.loader import *
 import random
 
 import unittest

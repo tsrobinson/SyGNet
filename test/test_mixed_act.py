@@ -1,6 +1,6 @@
-from src.sygnet.sygnet_requirements import *
-from src.sygnet.sygnet_models import _MixedActivation
-from src.sygnet.sygnet_dataloaders import *
+from src.sygnet.requirements import *
+from src.sygnet.models import _MixedActivation
+from src.sygnet.dataloaders import *
 
 import unittest
 import random

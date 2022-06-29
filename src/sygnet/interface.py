@@ -3,10 +3,10 @@ import logging
 import os.path
 from pathlib import Path
 
-from .sygnet_requirements import *
-from .sygnet_models import Generator, Discriminator, Critic, ConditionalWrapper
-from .sygnet_train import train_basic, train_wgan, train_conditional
-from .sygnet_dataloaders import GeneratedData, _ohe_colnames
+from .requirements import *
+from .models import Generator, Discriminator, Critic, ConditionalWrapper
+from .train import train_basic, train_wgan, train_conditional
+from .dataloaders import GeneratedData, _ohe_colnames
 
 
 logger = logging.getLogger(__name__)
