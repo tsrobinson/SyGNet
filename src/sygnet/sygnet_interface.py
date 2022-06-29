@@ -265,7 +265,8 @@ class SygnetModel:
             )
             
         if save_model:
-            pickle.dump(self, open(filepath / (save_prefix + datetime.now().strftime("%d%b%y_%H%M")), 'wb'))
+            with open(filepath / (save_prefix + datetime.now().strftime("%d%b%y_%H%M")), 'wb') as f:
+                pickle.dump(self, f)
         return None
 
     def sample(self, nobs, labels = None, file = None, decode = True, as_pandas = True,  **kwargs):
