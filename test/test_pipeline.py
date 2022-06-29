@@ -1,5 +1,5 @@
 import unittest
-from src.sygnet.sygnet_interface import *
+from src.sygnet.interface import *
 
 class TestSum(unittest.TestCase):
 

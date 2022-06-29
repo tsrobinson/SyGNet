@@ -1,5 +1,5 @@
-from src.sygnet.sygnet_requirements import *
-from src.sygnet.sygnet_interface import *
+from src.sygnet.requirements import *
+from src.sygnet.interface import *
 import random
 
 import unittest

@@ -1,6 +1,6 @@
-from .sygnet_requirements import *
-from .sygnet_dataloaders import GeneratedData
-from .sygnet_interface import SygnetModel
+from .requirements import *
+from .dataloaders import GeneratedData
+from .interface import SygnetModel
 
 import random
 from sklearn.model_selection import KFold

@@ -1,4 +1,4 @@
-from .sygnet_requirements import *
+from .requirements import *
 from sklearn.preprocessing import OneHotEncoder
 
 logger = logging.getLogger(__name__)

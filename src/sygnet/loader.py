@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from .sygnet_requirements import *
+from .requirements import *
 
 logger = logging.getLogger(__name__)
 
