@@ -144,12 +144,13 @@ def train_wgan(
     generator_optimizer = torch.optim.Adam(generator_model.parameters(), lr=learning_rate, betas=adam_betas)
     critic_optimizer = torch.optim.Adam(critic_model.parameters(), lr=learning_rate, betas=adam_betas)
 
+    # Loss recording
+    generator_losses = []
+    critic_losses = []
+
     # Training loop
     tbar = trange(epochs, desc="Epoch")
     for epoch in tbar:
-
-        total_critic_loss = 0
-        total_gen_loss = 0
 
         for i, (features, _) in enumerate(data_loader):
             
@@ -162,8 +163,8 @@ def train_wgan(
 
             ## Sort out the critic
             # Zero gradients and get critic scores
-            generator_optimizer.zero_grad()
-            critic_optimizer.zero_grad()
+            generator_model.zero_grad()
+            critic_model.zero_grad()
 
             critic_score_real = critic_model(real_data)
             
@@ -195,10 +196,12 @@ def train_wgan(
             error_critic.backward()
             critic_optimizer.step()
 
+            critic_losses.append(error_critic.item())
+
             ## Sort out the generator
             # Re-zero gradients
-            generator_optimizer.zero_grad()
-            critic_optimizer.zero_grad()
+            generator_model.zero_grad()
+            critic_model.zero_grad()
             # Refresh random fake data
             fake_input2 = torch.rand(size=(gen_obs, gen_cols))
             fake_input2 = fake_input2.to(device)
@@ -209,20 +212,18 @@ def train_wgan(
             error_gen.backward()
             generator_optimizer.step()
 
-            # Add losses to epoch tracker (for reporting)
-            total_critic_loss += error_critic.item()
-            total_gen_loss += error_gen.item()
+            generator_losses.append(error_gen.item())
 
         # Calculate epoch-level losses
-        epoch_critic_loss = total_critic_loss/len(data_loader)
-        epoch_gen_loss = total_gen_loss/len(data_loader)
+        # epoch_critic_loss = total_critic_loss/len(data_loader)
+        # epoch_gen_loss = total_gen_loss/len(data_loader)
         
-        if use_tensorboard:
-            writer.add_scalar('Critic loss', epoch_critic_loss, global_step=epoch)
-            writer.add_scalar('Generator loss', epoch_gen_loss, global_step=epoch)
+        # if use_tensorboard:
+        #     writer.add_scalar('Critic loss', epoch_critic_loss, global_step=epoch)
+        #     writer.add_scalar('Generator loss', epoch_gen_loss, global_step=epoch)
 
-        logger.info("Epoch %s summary: Generator loss: %s; Critic loss = %s" % (epoch, round(epoch_gen_loss,5), round(epoch_critic_loss,5)))
-        tbar.set_postfix(loss = epoch_critic_loss)
+        # logger.info("Epoch %s summary: Generator loss: %s; Critic loss = %s" % (epoch, round(epoch_gen_loss,5), round(epoch_critic_loss,5)))
+        # tbar.set_postfix(loss = epoch_critic_loss)
     return None
 
 def train_conditional(
@@ -273,12 +274,13 @@ def train_conditional(
     generator_optimizer = torch.optim.Adam(generator_model.parameters(), lr=learning_rate, betas=adam_betas)
     critic_optimizer = torch.optim.Adam(critic_model.parameters(), lr=learning_rate, betas=adam_betas)
 
+    # Loss recording
+    generator_losses = []
+    critic_losses = []
+
     # Training loop
     tbar = trange(epochs, desc="Epoch")
     for epoch in tbar:
-
-        total_critic_loss = 0
-        total_gen_loss = 0
          
         for i, (features, labels) in enumerate(data_loader):
             
@@ -291,8 +293,8 @@ def train_conditional(
 
             ## Sort out the critic
             # Zero gradients and get critic scores
-            generator_optimizer.zero_grad()
-            critic_optimizer.zero_grad()
+            generator_model.zero_grad()
+            critic_model.zero_grad()
 
             critic_score_real = critic_model(real_data, real_labels)
             
@@ -324,10 +326,12 @@ def train_conditional(
             error_critic.backward()
             critic_optimizer.step()
 
+            critic_losses.append(error_critic.item())
+
             ## Sort out the generator
             # Re-zero gradients
-            generator_optimizer.zero_grad()
-            critic_optimizer.zero_grad()
+            generator_model.zero_grad()
+            critic_model.zero_grad()
             # Refresh random fake data
             fake_input2 = torch.rand(size=(gen_obs, gen_cols))
             fake_input2 = fake_input2.to(device)
@@ -338,19 +342,17 @@ def train_conditional(
             error_gen.backward()
             generator_optimizer.step()
 
-            # Add losses to epoch tracker (for reporting)
-            total_critic_loss += error_critic.item()
-            total_gen_loss += error_gen.item()
+            generator_losses.append(error_gen.item())
 
         # Calculate epoch-level losses
-        epoch_critic_loss = total_critic_loss/len(data_loader)
-        epoch_gen_loss = total_gen_loss/len(data_loader)
+        # epoch_critic_loss = total_critic_loss/len(data_loader)
+        # epoch_gen_loss = total_gen_loss/len(data_loader)
 
-        if use_tensorboard:
-            writer.add_scalar('Critic loss', epoch_critic_loss, global_step=epoch)
-            writer.add_scalar('Generator loss', epoch_gen_loss, global_step=epoch)
+        # if use_tensorboard:
+        #     writer.add_scalar('Critic loss', epoch_critic_loss, global_step=epoch)
+        #     writer.add_scalar('Generator loss', epoch_gen_loss, global_step=epoch)
 
-        logger.info("Epoch %s summary: Generator loss: %s; Critic loss = %s" % (epoch, round(epoch_gen_loss,5), round(epoch_critic_loss,5)))
-        tbar.set_postfix(loss = epoch_critic_loss)
+        # logger.info("Epoch %s summary: Generator loss: %s; Critic loss = %s" % (epoch, round(epoch_gen_loss,5), round(epoch_critic_loss,5)))
+        # tbar.set_postfix(loss = epoch_critic_loss)
 
     return None
