@@ -8,10 +8,11 @@ from sklearn.model_selection import KFold
 logger = logging.getLogger(__name__)
 
 def critic_loss(model, **kwargs):
-    """Helper function to extract W-loss 
+    """Helper function to extract W-loss from trained model 
 
         Args:
             model (func): Critic model
+            **kwargs: Additional arguments that will have no effect on output
 
         Returns:
             critic loss from final batch-iteration of training
