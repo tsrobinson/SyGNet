@@ -23,12 +23,10 @@ class TestSum(unittest.TestCase):
         tuning_results = tune(
             parameter_dict = {'hidden_nodes':[[32,32],[32]], 'dropout_p':[0.1,0.2]},
             data = self.input_data,
-            test_func = critic_loss, 
             runs = 2,
             mode = "wgan",
             k = 2,
             tuner = "random",
-            n = 100,
             epochs = 1,
             seed = 89,
             device = 'cpu')
