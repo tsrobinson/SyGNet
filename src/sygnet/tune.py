@@ -102,61 +102,15 @@ def tune(
     return tuning_results
 
 
-def critic_loss(model, n = 100, conditional = False, cond_cols = None, batch_size = None, device = 'cpu'):
-    """Helper function to calculate validation W-loss 
+def critic_loss(model):
+    """Helper function to extract W-loss 
 
         Args:
-            critic_model (func): Critic model
-            n (int): Number of observations to sample from the trained SyGNet model
-            generator_model (int): Generator model
-            conditional (bool): Whether or not to format data for conditional GAN architecture (default = False)
-            cond_cols (list of colnames): If conditional is True, the column names of the real data that should serve as the conditional labels in the model  
-            batch_size (int): Number of observations per batch. If None (default) will divide the data into 20 batches
-            device (str): Whether to train model on the "cpu" (default) or "cuda" (i.e. GPU-training).
+            model (func): Critic model
 
         Returns:
-            pd.DataFrame of hyperparameter tuning results, with k observations per sample of hyperparameter values
+            critic loss from final batch-iteration of training
 
     """
 
-    data = model.sample(n, decode = False, as_pandas = True)
-
-    bs_loss = int(np.floor(data.shape[0]/20)) if batch_size is None else batch_size
-
-    if conditional:
-        data = GeneratedData(data, conditional=True, cond_cols = cond_cols)
-    else:
-        data = GeneratedData(data)
-
-    data_loader = DataLoader(dataset = data, batch_size=bs_loss, shuffle=True)
-
-    total_critic_loss = 0
-
-    for i, (features, labels) in enumerate(data_loader):
-        gen_obs = features.size(dim=0)
-        gen_cols = features.size(dim=1)
-        real_data = features.to(device)
-
-        # Real data score
-        if conditional:
-            real_labels = labels.to(device)
-            critic_score_real = model.discriminator(real_data, real_labels)
-        else:
-            critic_score_real = model.discriminator(real_data)
-        
-        # Fake data score
-        fake_input = torch.rand(size=(gen_obs, gen_cols))
-        fake_input = fake_input.to(device)
-        if conditional:
-            fake_data = model.generator(fake_input, real_labels).to(device)
-            critic_score_fake = model.discriminator(fake_data, real_labels)
-        else:
-            fake_data = model.generator(fake_input).to(device)
-            critic_score_fake = model.discriminator(fake_data)
-
-        error_critic = (critic_score_fake - critic_score_real).mean() 
-
-        # Add losses to epoch tracker (for reporting)
-        total_critic_loss += error_critic.item()*gen_obs
-
-    return total_critic_loss/n
+    return model.disc_losses[-1]
