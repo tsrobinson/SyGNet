@@ -213,17 +213,13 @@ def train_wgan(
             generator_optimizer.step()
 
             generator_losses.append(error_gen.item())
-
-        # Calculate epoch-level losses
-        # epoch_critic_loss = total_critic_loss/len(data_loader)
-        # epoch_gen_loss = total_gen_loss/len(data_loader)
         
-        # if use_tensorboard:
-        #     writer.add_scalar('Critic loss', epoch_critic_loss, global_step=epoch)
-        #     writer.add_scalar('Generator loss', epoch_gen_loss, global_step=epoch)
+        if use_tensorboard:
+            writer.add_scalar('Critic loss', critic_losses[-1], global_step=epoch)
+            writer.add_scalar('Generator loss', generator_losses[-1], global_step=epoch)
 
-        # logger.info("Epoch %s summary: Generator loss: %s; Critic loss = %s" % (epoch, round(epoch_gen_loss,5), round(epoch_critic_loss,5)))
-        # tbar.set_postfix(loss = epoch_critic_loss)
+        logger.info("Epoch %s summary: Generator loss: %s; Critic loss = %s" % (epoch, round(generator_losses[-1],5), round(critic_losses[-1],5)))
+        tbar.set_postfix(loss = critic_losses[-1])
     return None
 
 def train_conditional(
@@ -344,15 +340,11 @@ def train_conditional(
 
             generator_losses.append(error_gen.item())
 
-        # Calculate epoch-level losses
-        # epoch_critic_loss = total_critic_loss/len(data_loader)
-        # epoch_gen_loss = total_gen_loss/len(data_loader)
+        if use_tensorboard:
+            writer.add_scalar('Critic loss', critic_losses[-1], global_step=epoch)
+            writer.add_scalar('Generator loss', generator_losses[-1], global_step=epoch)
 
-        # if use_tensorboard:
-        #     writer.add_scalar('Critic loss', epoch_critic_loss, global_step=epoch)
-        #     writer.add_scalar('Generator loss', epoch_gen_loss, global_step=epoch)
-
-        # logger.info("Epoch %s summary: Generator loss: %s; Critic loss = %s" % (epoch, round(epoch_gen_loss,5), round(epoch_critic_loss,5)))
-        # tbar.set_postfix(loss = epoch_critic_loss)
+        logger.info("Epoch %s summary: Generator loss: %s; Critic loss = %s" % (epoch, round(generator_losses[-1],5), round(critic_losses[-1],5)))
+        tbar.set_postfix(loss = critic_losses[-1])
 
     return None
