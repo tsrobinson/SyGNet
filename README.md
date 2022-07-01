@@ -17,7 +17,7 @@ To install via pip, you can run the following command at the command line:
 **sygnet** requires:
     
     numpy>=1.20
-    torch>=1.11.0
+    torch>=1.10.0
     scikit-learn>=1.0
     pandas>=1.4
     datetime
@@ -27,20 +27,27 @@ To install via pip, you can run the following command at the command line:
 
 You can find a demonstration of **sygnet** under [examples/basic_example](examples/basic_example.ipynb).
 
-### Current version: 0.0.4 (alpha release)
+### Current version: 0.0.7 (alpha release)
 
 **Alpha release**: You should expect both functionality and pipelines to change (rapidly). Comments and bug reports are very welcome!
 
 Changes:
+
+* Update internal `train_*` functions to return losses and improve logging
+* Update `tune()` function
+
+### Previous releases
+
+**0.0.6 and 0.0.5**
+* Internal changes to improve code efficiency
+* Removes `sygnet_` from all submodule names
+* Lowers PyTorch requirement to 1.10 for compatability with OpenCE environments
 
 **0.0.4**
 * Adds `tune()` function to run hyperparameter tuning
 * Adds model saving functionality to `SygnetModel.fit()`
 * Fixes various bugs
 * Improves documentation
-
-
-### Previous releases
 
 **0.0.3**
 * Fixes column ordering issue when using mixed activation layer
