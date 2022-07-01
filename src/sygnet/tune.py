@@ -20,6 +20,7 @@ def tune(
     tuner = "random",
     n = 1000,
     epochs = 50,
+    checkpoints = 1,
     seed = 89,
     device = 'cpu'):
     """Find optimal values for a SyGNet model 
@@ -36,20 +37,18 @@ def tune(
             k (int): Number of folds for adapted k-fold validation
             tuner (str): Placeholder argument for type of hyperparameter sampling to conduct -- currently only random sampling is supported
             n (int): Number of synthetic observations to draw and pass to `test_func`
-            epochs (int): Number of epochs to train each model for
+            epochs (int): Total number of epochs to train each model for
+            checkpoints (int): Number of times to assess the model within each run. The test function will be run every epochs//checkpoints iterations.
             seed (int): Random seed
             device (str): Whether to train model on the "cpu" (default) or "cuda" (i.e. GPU-training).
 
         Returns:
-            pd.DataFrame of hyperparameter tuning results, with k observations per sample of hyperparameter values
+            pd.DataFrame of hyperparameter tuning results
 
     """
 
     logger.warning(
-        "THIS FUNCTION IS STILL IN DEVELOPMENT. \
-        Only 'wgan' modelling has been implemented thus far, \
-            and all hyperparameter searches will use random \
-                sampling rather than an exhaustive grid seach"
+        "This function is still in development. Only 'wgan' modelling has been implemented thus far, and all hyperparameter searches will use random sampling rather than an exhaustive grid seach"
     )
 
     torch.manual_seed(seed)
@@ -83,30 +82,32 @@ def tune(
 
         k_count = 0
 
-        for train_idx, kth_idx in kf.split(data):
+        for train_idx, _ in kf.split(data):
 
             sygnet_model = SygnetModel(**model_dict_chosen, **model_opts, mode = mode)
-
-            sygnet_model.fit(
-                data.iloc[train_idx,:],
-                **fit_dict_chosen,
-                **fit_opts,
-                epochs = epochs,
-                device = device)
-
-            k_out = test_func(model = sygnet_model, **test_opts)
-
-            tuning_results.append([i, k_count, k_out] + list(model_dict_chosen.values()) + list(fit_dict_chosen.values()))
+            train_epochs = epochs//checkpoints
+            
+            for c in range(checkpoints):
+                sygnet_model.fit(
+                    data.iloc[train_idx,:],
+                    **fit_dict_chosen,
+                    **fit_opts,
+                    epochs = train_epochs,
+                    device = device)
+                current_epoch = (c+1)*train_epochs
+                k_out = test_func(model = sygnet_model, **test_opts)
+                
+                tuning_results.append([i, k_count, current_epoch, k_out] + list(model_dict_chosen.values()) + list(fit_dict_chosen.values()))
 
             k_count += 1
         
     tuning_results = pd.DataFrame(tuning_results)
-    tuning_results.columns = ["it", "k-fold", "fun_out"] +  list(model_dict_chosen.keys()) + list(fit_dict_chosen.keys())
+    tuning_results.columns = ["it", "k-fold","epochs","fun_out"] +  list(model_dict_chosen.keys()) + list(fit_dict_chosen.keys())
     
     return tuning_results
 
 
-def critic_loss(model):
+def critic_loss(model, **kwargs):
     """Helper function to extract W-loss 
 
         Args:
