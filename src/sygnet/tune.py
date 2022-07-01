@@ -81,6 +81,8 @@ def tune(
         kf = KFold(n_splits=k)
         kf.get_n_splits(data)
 
+        k_count = 0
+
         for train_idx, kth_idx in kf.split(data):
 
             sygnet_model = SygnetModel(**model_dict_chosen, **model_opts, mode = mode)
@@ -94,7 +96,9 @@ def tune(
 
             k_out = test_func(model = sygnet_model, **test_opts)
 
-            tuning_results.append([i, kth_idx, k_out] + list(model_dict_chosen.values()) + list(fit_dict_chosen.values()))
+            tuning_results.append([i, k_count, k_out] + list(model_dict_chosen.values()) + list(fit_dict_chosen.values()))
+
+            k_count += 1
         
     tuning_results = pd.DataFrame(tuning_results)
     tuning_results.columns = ["it", "k-fold", "fun_out"] +  list(model_dict_chosen.keys()) + list(fit_dict_chosen.keys())
