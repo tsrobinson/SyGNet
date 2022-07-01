@@ -7,20 +7,32 @@ from sklearn.model_selection import KFold
 
 logger = logging.getLogger(__name__)
 
+def critic_loss(model, **kwargs):
+    """Helper function to extract W-loss 
+
+        Args:
+            model (func): Critic model
+
+        Returns:
+            critic loss from final batch-iteration of training
+
+    """
+
+    return model.disc_losses[-1]
+
 def tune(
     parameter_dict,
     data,
-    test_func, 
     runs,
+    epochs = 50,
+    checkpoints = 1,
+    test_func = critic_loss, 
     model_opts = {},
     fit_opts = {},
     test_opts = {},
     mode = "wgan",
     k = 5,
     tuner = "random",
-    n = 1000,
-    epochs = 50,
-    checkpoints = 1,
     seed = 89,
     device = 'cpu'):
     """Find optimal values for a SyGNet model 
@@ -28,17 +40,16 @@ def tune(
         Args:
             parameter_dict (dict): A dictionary of hyperparameter arguments and list of values to try. Currently, this function supports tuning the following parameters: `hidden_nodes`, `dropout_p`,`layer_norms`,`relu_leak`, `batch_size,`learning_rate`, and `adam_betas`"
             data (str or pd.DataFrame): Real data used to train GAN, can be a filepath or Pandas DataFrame
-            test_func (func): Function used to assess the quality of the model. This can be any custom function, but must accept a `model` argument which will be a trained SygnetModel()
             runs (int): Number of hyperparameter combinations to try
+            epochs (int): Total number of epochs to train each model for
+            checkpoints (int): Number of times to assess the model within each run. The test function will be run every epochs//checkpoints iterations.
+            test_func (func): Function used to assess the quality of the model (default is the training critic loss, which has known convergence properties). This argument can be any custom function, but must accept a `model` argument which will be a trained SygnetModel()
             model_opts (dict): Dictionary of fixed arguments to pass to SygnetModel().
             fit_opts (dict): Dictionary of fixed arguments to pass to SygnetModel.fit().
             test_opts (dict): Dictionary of fixed arguments to pass to `test_func`
             mode (str): One of ["basic","wgan","cgan"]. Determines whether to use basic GAN, Wasserstein loss, or Conditional GAN training method (default = "wgan").
             k (int): Number of folds for adapted k-fold validation
             tuner (str): Placeholder argument for type of hyperparameter sampling to conduct -- currently only random sampling is supported
-            n (int): Number of synthetic observations to draw and pass to `test_func`
-            epochs (int): Total number of epochs to train each model for
-            checkpoints (int): Number of times to assess the model within each run. The test function will be run every epochs//checkpoints iterations.
             seed (int): Random seed
             device (str): Whether to train model on the "cpu" (default) or "cuda" (i.e. GPU-training).
 
@@ -107,15 +118,3 @@ def tune(
     return tuning_results
 
 
-def critic_loss(model, **kwargs):
-    """Helper function to extract W-loss 
-
-        Args:
-            model (func): Critic model
-
-        Returns:
-            critic loss from final batch-iteration of training
-
-    """
-
-    return model.disc_losses[-1]
