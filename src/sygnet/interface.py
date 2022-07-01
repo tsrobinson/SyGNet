@@ -56,6 +56,8 @@ class SygnetModel:
             gen_leak (float)
             disc_leak (float)
             data_encoders (list)
+            gen_losses (list)
+            disc_losses (list)
 
         """
         self.mode = mode
@@ -69,6 +71,9 @@ class SygnetModel:
         self.mixed_activation = mixed_activation
         self.data_encoders = None
         self.colnames = None
+
+        self.gen_losses = []
+        self.disc_losses = []
 
         # Check args
         if self.mode not in ['basic','wgan','cgan']:
@@ -228,7 +233,7 @@ class SygnetModel:
             batch_size = int(np.floor(data.shape[0]/20))
 
         if self.mode == "basic":
-            train_basic(
+            g_loss, d_loss = train_basic(
                 training_data = torch_data, 
                 generator = self.generator, 
                 discriminator = self.discriminator,
@@ -239,7 +244,7 @@ class SygnetModel:
                 use_tensorboard = use_tensorboard
             )
         elif self.mode == "wgan":
-            train_wgan(
+            g_loss, d_loss = train_wgan(
                 training_data = torch_data, 
                 generator = self.generator, 
                 critic = self.discriminator,
@@ -252,7 +257,7 @@ class SygnetModel:
                 use_tensorboard = use_tensorboard
             )
         elif self.mode == "cgan":
-            train_conditional(
+            g_loss, d_loss = train_conditional(
                 training_data = torch_data, 
                 generator = self.generator, 
                 critic = self.discriminator,
@@ -264,6 +269,9 @@ class SygnetModel:
                 lmbda = lmbda,
                 use_tensorboard = use_tensorboard
             )
+        
+        self.gen_losses += g_loss
+        self.disc_losses += d_loss
             
         if save_model:
             with open(filepath / (save_prefix + datetime.now().strftime("%d%b%y_%H%M")), 'wb') as f:
