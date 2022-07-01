@@ -29,7 +29,7 @@ def train_basic(
         The generator (and discriminator) model is modified in-place so this is not returned by the function
 
     Returns:
-        None
+        generator_losses (list), discriminator_losses (list): lists of losses at the batch-level
 
     """
 
@@ -47,8 +47,12 @@ def train_basic(
     generator_optimizer = torch.optim.Adam(generator_model.parameters(), lr=learning_rate)
     discriminator_optimizer = torch.optim.Adam(discriminator_model.parameters(), lr=learning_rate)
 
+    # Loss recording
+    generator_losses = []
+    discriminator_losses = []
+
     # Define loss function
-    loss = nn.BCELoss() #.to(device) # TSR: since this is functional I don't think it needs to go to device
+    loss = nn.BCELoss()
 
     # Training loop
     tbar = trange(epochs, desc="Epoch")
@@ -89,13 +93,16 @@ def train_basic(
             discriminator_loss.backward()
             discriminator_optimizer.step()
 
+            generator_losses.append(generator_loss.item())
+            discriminator_losses.append(true_discriminator_loss.item())
+
         if use_tensorboard:
             writer.add_scalar('Generator loss', generator_loss, global_step=epoch)
             writer.add_scalar('True Discriminator loss', true_discriminator_loss, global_step=epoch)
 
         logger.info(" Epoch %s summary: Generator loss: %s; True discriminator loss = %s; Training loss: %s" % (epoch, round(generator_loss.item(),5), round(true_discriminator_loss.item(),5), round(generator_discriminator_loss.item(),5)))
 
-    return None
+    return generator_losses, discriminator_losses
 
 def train_wgan(
     training_data, 
@@ -124,10 +131,10 @@ def train_wgan(
         use_tensorboard (boolean): If True, creates tensorboard output capturing key training metrics (default = True)
 
     Note: 
-        The generator (and discriminator) model is modified in-place so this is not returned by the function
+        The generator and critic models are modified in-place so this is not returned by the function
 
     Returns:
-        None
+        generator_losses (list), critic_losses (list): lists of losses at the batch-level
 
     """
 
@@ -220,7 +227,7 @@ def train_wgan(
 
         logger.info("Epoch %s summary: Generator loss: %s; Critic loss = %s" % (epoch, round(generator_losses[-1],5), round(critic_losses[-1],5)))
         tbar.set_postfix(loss = critic_losses[-1])
-    return None
+    return generator_losses, critic_losses
 
 def train_conditional(
     training_data, 
@@ -249,10 +256,10 @@ def train_conditional(
         use_tensorboard (boolean): If True, creates tensorboard output capturing key training metrics (default = True)
 
     Note: 
-        The generator (and critic) model is modified in-place so this is not returned by the function
+        The generator and critic models are modified in-place so this is not returned by the function
 
     Returns:
-        None
+        generator_losses (list), critic_losses (list): lists of losses at the batch-level
 
     """
 
@@ -347,4 +354,4 @@ def train_conditional(
         logger.info("Epoch %s summary: Generator loss: %s; Critic loss = %s" % (epoch, round(generator_losses[-1],5), round(critic_losses[-1],5)))
         tbar.set_postfix(loss = critic_losses[-1])
 
-    return None
+    return generator_losses, critic_losses
