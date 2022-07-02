@@ -32,4 +32,24 @@ class TestSum(unittest.TestCase):
             device = 'cpu')
 
         self.assertEqual(tuning_results.shape[0], 4)
+
+    def test_nofolds(self):
+        """
+        Test tuner with no k-fold validation
+        """
+        
+        tuning_results = tune(
+            parameter_dict = {'hidden_nodes':[[32,32],[32]], 'dropout_p':[0.1,0.2]},
+            data = self.input_data,
+            runs = 2,
+            mode = "wgan",
+            k = 1,
+            tuner = "random",
+            epochs = 1,
+            seed = 89,
+            device = 'cpu')
+
+        print(tuning_results)
+
+        self.assertEqual(tuning_results.shape[0], 2)
         

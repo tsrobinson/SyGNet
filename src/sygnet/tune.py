@@ -32,7 +32,7 @@ def tune(
     fit_opts = {},
     test_opts = {},
     mode = "wgan",
-    k = 5,
+    k = 1,
     tuner = "random",
     seed = 89,
     device = 'cpu'):
@@ -49,7 +49,7 @@ def tune(
             fit_opts (dict): Dictionary of fixed arguments to pass to SygnetModel.fit().
             test_opts (dict): Dictionary of fixed arguments to pass to `test_func`
             mode (str): One of ["basic","wgan","cgan"]. Determines whether to use basic GAN, Wasserstein loss, or Conditional GAN training method (default = "wgan").
-            k (int): Number of folds for adapted k-fold validation
+            k (int): Number of folds for adapted k-fold validation (default = 1). If left at default, all data is used.
             tuner (str): Placeholder argument for type of hyperparameter sampling to conduct -- currently only random sampling is supported
             seed (int): Random seed
             device (str): Whether to train model on the "cpu" (default) or "cuda" (i.e. GPU-training).
@@ -89,19 +89,26 @@ def tune(
         model_dict_chosen = {k: random.choice(v) for k,v in model_dict.items()}
         fit_dict_chosen = {k: random.choice(v) for k,v in fit_dict.items()}
 
-        kf = KFold(n_splits=k)
-        kf.get_n_splits(data)
-
+        if k > 1:
+            kf = KFold(n_splits=k)
+            kf.get_n_splits(data)
+        else:
+            kf = KFold(n_splits =2)
+            kf.get_n_splits(data)
+        
         k_count = 0
 
-        for train_idx, _ in kf.split(data):
+        for train_idx, test_idx in kf.split(data):
 
+            if k == 1 and k_count == 1:
+                continue
+            
             sygnet_model = SygnetModel(**model_dict_chosen, **model_opts, mode = mode)
             train_epochs = epochs//checkpoints
             
             for c in range(checkpoints):
                 sygnet_model.fit(
-                    data.iloc[train_idx,:],
+                    data = data.iloc[train_idx,:] if k > 1 else data,
                     **fit_dict_chosen,
                     **fit_opts,
                     epochs = train_epochs,
