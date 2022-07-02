@@ -27,16 +27,20 @@ To install via pip, you can run the following command at the command line:
 
 You can find a demonstration of **sygnet** under [examples/basic_example](examples/basic_example.ipynb).
 
-### Current version: 0.0.7 (alpha release)
+### Current version: 0.0.8 (alpha release)
 
 **Alpha release**: You should expect both functionality and pipelines to change (rapidly). Comments and bug reports are very welcome!
 
 Changes:
 
-* Update internal `train_*` functions to return losses and improve logging
-* Update `tune()` function
+* Update `tune()` to provide no k-fold cross validation as default
+* Update numpy dependency to fix pre-processing bug
 
 ### Previous releases
+
+**0.0.7**
+* Update internal `train_*` functions to return losses and improve logging
+* Update `tune()` function
 
 **0.0.6 and 0.0.5**
 * Internal changes to improve code efficiency

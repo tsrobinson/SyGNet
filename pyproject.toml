@@ -13,7 +13,7 @@ maintainers = [
     {name = "Maksim Zubok"},
 ]
 
-version = "0.0.7"
+version = "0.0.8"
 description = "Synthetic data using Generative Adversarial Networks"
 keywords = [
     "synthetic data", 
@@ -32,7 +32,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
 ]
 dependencies = [
-    "numpy>=1.20",
+    "numpy>=1.21",
     "torch>=1.10.0",
     "scikit-learn>=1.0",
     "pandas>=1.4",
