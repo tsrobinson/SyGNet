@@ -16,7 +16,7 @@ To install via pip, you can run the following command at the command line:
 
 **sygnet** requires:
     
-    numpy>=1.20
+    numpy>=1.21
     torch>=1.10.0
     scikit-learn>=1.0
     pandas>=1.4
