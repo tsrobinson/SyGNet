@@ -49,7 +49,7 @@ def tune(
             fit_opts (dict): Dictionary of fixed arguments to pass to SygnetModel.fit().
             test_opts (dict): Dictionary of fixed arguments to pass to `test_func`
             mode (str): One of ["basic","wgan","cgan"]. Determines whether to use basic GAN, Wasserstein loss, or Conditional GAN training method (default = "wgan").
-            k (int): Number of folds for adapted k-fold validation (default = 1). If left at default, all data is used.
+            k (int): Number of folds for k-fold procedures (default = 1, i.e. no K-fold validation). Users writing custom test functions can access the holdout data indices using `test_idx`
             tuner (str): Placeholder argument for type of hyperparameter sampling to conduct -- currently only random sampling is supported
             seed (int): Random seed
             device (str): Whether to train model on the "cpu" (default) or "cuda" (i.e. GPU-training).
@@ -121,7 +121,7 @@ def tune(
             k_count += 1
         
     tuning_results = pd.DataFrame(tuning_results)
-    tuning_results.columns = ["it", "k-fold","epochs","fun_out"] +  list(model_dict_chosen.keys()) + list(fit_dict_chosen.keys())
+    tuning_results.columns = ["it", "fold","epochs","fun_out"] +  list(model_dict_chosen.keys()) + list(fit_dict_chosen.keys())
     
     return tuning_results
 
