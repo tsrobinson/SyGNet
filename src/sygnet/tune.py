@@ -74,7 +74,7 @@ def tune(
             "Since you are using Conditional arcgitecture, you need to specify conditional columns as 'cond_cols' in fit_opts dictionary. Example: fit_opts = {'save_model': False, 'cond_cols' : ['name']}"
         )
 
-    if mode == "cgan" and type(fit_opts['cond_cols']) != list:
+    if mode == "cgan" and not isinstance(fit_opts['cond_cols'],list):
         raise Exception("Conditional columns 'cond_cols' must be a list!")
 
     if type(parameter_dict) is not dict:
