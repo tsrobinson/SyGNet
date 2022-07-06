@@ -60,14 +60,22 @@ def tune(
     """
 
     logger.warning(
-        "This function is still in development. Only 'wgan' modelling has been implemented thus far, and all hyperparameter searches will use random sampling rather than an exhaustive grid seach"
+        "This function is still in development. Only 'wgan' and 'cgan' modelling has been implemented thus far, and all hyperparameter searches will use random sampling rather than an exhaustive grid seach"
     )
 
     torch.manual_seed(seed)
     random.seed(seed)
 
-    if mode != "wgan":
+    if mode not in ["wgan", "cgan"]:
         return None
+
+    if mode == "cgan" and 'cond_cols' not in fit_opts:
+        logger.warning(
+            "Since you are using Conditional arcgitecture, you need to specify conditional columns as 'cond_cols' in fit_opts dictionary. Example: fit_opts = {'save_model': False, 'cond_cols' : ['name']}"
+        )
+
+    if mode == "cgan" and type(fit_opts['cond_cols']) != list:
+        raise Exception("Conditional columns 'cond_cols' must be a list!")
 
     if type(parameter_dict) is not dict:
         logger.error("`parameter_dict` must be a dictionary with hyperparameter arguments as keys and lists of options to try as values. \n \
