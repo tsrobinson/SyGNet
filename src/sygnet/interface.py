@@ -278,7 +278,7 @@ class SygnetModel:
                 pickle.dump(self, f)
         return None
 
-    def sample(self, nobs, labels = None, file = None, decode = True, as_pandas = True,  **kwargs):
+    def sample(self, nobs, labels = None, file = None, decode = True, as_pandas = True, **kwargs):
         """Generate synthetic data 
 
         Args:
@@ -326,7 +326,7 @@ class SygnetModel:
             seed_data = torch.rand(size=(nobs, self.generator.output_size))
 
         with torch.no_grad():
-            device = 'cuda' if next(self.generator.parameters()).is_cuda else 'cpu'
+            device = next(self.generator.parameters()).device.type
 
             if self.mode == "cgan":
                 seed_latent = seed_latent.to(device)
