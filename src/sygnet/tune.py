@@ -106,7 +106,7 @@ def tune(
         
         k_count = 0
 
-        for train_idx, test_idx in kf.split(data):
+        for train_idx, _ in kf.split(data):
 
             if k == 1 and k_count == 1:
                 continue
