@@ -1,4 +1,5 @@
 from .requirements import *
+from .attention import *
 
 logger = logging.getLogger(__name__)
 
@@ -148,15 +149,14 @@ class Generator(nn.Module):
         x = self.out(x)
         return x
 
-class Discriminator(nn.Module):
-    """Discriminator class for GAN network
+class Critic(nn.Module):
+    """Critic class for GAN network
 
     Args:
         input_size (int): The number of input nodes
         hidden_sizes (list of ints): A list of ints, containing the number of nodes in each hidden layer of the discriminator network
         dropout_p (float): The proportion of hidden nodes to be dropped randomly during training
         relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions (default = 0.1; note: this default is an order larger than torch default.)
-        layer_norm (boolean): Whether to include layer normalization in network (default = True)
 
     Attributes:
         node_sizes (list): A list of node sizes per layer of the network
@@ -166,44 +166,31 @@ class Discriminator(nn.Module):
         linears (torch.nn.ModuleList): A torch-formatted list of linear layers in the network
         dropouts (torch.nn.ModuleList): A torch-formatted list of dropout layers in the network
         hidden_acts (torch.nn.ModuleList): A torch-formatted list of leaky-ReLU activation functions
-        layer_norms (torch.nn.ModuleList): A torch-formatted list of LayerNorm functions
         out (nn.Module): The final activation function, always nn.Sigmoid()
 
     """
 
-    def __init__(self, input_size, hidden_sizes, dropout_p = 0.2, layer_norm = True, relu_alpha = 0.1):
-        super(Discriminator, self).__init__()
+    def __init__(self, input_size, hidden_sizes, dropout_p = 0.2, relu_alpha = 0.01):
+        super(Critic, self).__init__()
      
         self.node_sizes = [input_size] + hidden_sizes + [1]
-
-        self.linears = nn.ModuleList(
-            [nn.Linear(self.node_sizes[i-1], self.node_sizes[i]) for i in range(1, len(self.node_sizes))]
-            )
-
-        if layer_norm:
-            self.layer_norms = nn.ModuleList(
-                [nn.LayerNorm(self.node_sizes[i+1]) for i in range(len(self.node_sizes)-2)]
-                )
-        else:
-            self.layer_norms = nn.ModuleList()
-        
+        self.n_blocks = len(hidden_sizes)
         self.relu_alpha = relu_alpha
-        self.hidden_acts = nn.ModuleList(
-            [nn.LeakyReLU(negative_slope = self.relu_alpha) for i in range(len(self.node_sizes)-2)]
-            )        
-
+        
         if dropout_p < 0 or dropout_p > 1:
             logger.error("dropout_p must be a real number in the range [0,1]")
-        elif dropout_p == 0:
-            self.dropout_p = dropout_p
-            self.dropouts = nn.ModuleList()
         else:
             self.dropout_p = dropout_p
-            self.dropouts = nn.ModuleList(
-                [nn.Dropout(p = self.dropout_p) for i in range(len(self.node_sizes)-2)]
-                )
 
-        self.out = nn.Sigmoid()
+
+        self.lin1 = nn.Linear(input_size, hidden_sizes[0], bias=True)
+        self.blocks = nn.Sequential(
+            *[LcBlock(n_in = hidden_sizes[i],
+                      n_out = hidden_sizes[i+1], 
+                      d_p = self.dropout_p, 
+                      r_a = self.relu_alpha) for i in range(self.n_blocks - 1)])
+        self.out = nn.Linear(hidden_sizes[-1], 1, bias=True) 
+        
 
     def forward(self, x):
         """Forward pass method
@@ -216,53 +203,12 @@ class Discriminator(nn.Module):
                         If using a Critic, the score of each input observation's 'realness'.
 
         """
-
         logger.debug("DISCRIMINATOR FORWARD")
-        for i in range(len(self.linears)):
-            logger.debug("Layer "+str(i)+": Linear")
-            x = self.linears[i](x)
-            # Pass FC layer through LN
-            if i < len(self.layer_norms):
-                logger.debug("Layer "+str(i)+": LN")
-                x = self.layer_norms[i](x)
-            # Then through leaky ReLU
-            if i < len(self.hidden_acts):
-                logger.debug("Layer "+str(i)+": Leak ReLU")
-                x = self.hidden_acts[i](x)
-            # Then apply dropout    
-            if i < len(self.dropouts):
-                logger.debug("Layer "+str(i)+": Dropout")
-                x = self.dropouts[i](x)
-        logger.debug("Output activation")
-        x = self.out(x)     
+        x = self.lin1(x)
+        x = self.blocks(x)
+        x = self.out(x)
+        
         return x
-
-class Critic(Discriminator):
-    """Critic class for WGAN network
-
-    Args:
-        input_size (int): The number of input nodes
-        hidden_sizes (list of ints): A list of ints, containing the number of nodes in each hidden layer of the critic network
-        dropout_p (float): The proportion of hidden nodes to be dropped randomly during training
-        relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions (default = 0.1; note: this default is an order larger than torch default.)
-        layer_norm (boolean): Whether to include layer normalization in network (default = True)
-
-    Attributes:
-        node_sizes (list): A list of node sizes per layer of the network
-        linears (torch.nn.ModuleList): A torch-formatted list of linear layers in the network
-        dropout_p (float): The proportion of hidden nodes to be dropped randomly during training
-        relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions
-        linears (torch.nn.ModuleList): A torch-formatted list of linear layers in the network
-        dropouts (torch.nn.ModuleList): A torch-formatted list of dropout layers in the network
-        hidden_acts (torch.nn.ModuleList): A torch-formatted list of leaky-ReLU activation functions
-        layer_norms (torch.nn.ModuleList): A torch-formatted list of LayerNorm functions
-        out (nn.Module): The final activation function, always nn.Identity()
-
-    """
-
-    def __init__(self, input_size, hidden_sizes, dropout_p = 0.2, layer_norm = True, relu_alpha = 0.1):
-        super().__init__(input_size, hidden_sizes, dropout_p , layer_norm , relu_alpha)
-        self.out = nn.Identity()
 
 class ConditionalWrapper(nn.Module):
     def __init__(self, latent_size, label_size, main_network, relu_alpha = 0.1):

@@ -1,7 +1,9 @@
 from .requirements import *
 
 class gHead(nn.Module):
-  ''' '''
+  ''' 
+  Single attention-head module
+  '''
   def __init__(self, head_size):
      super().__init__()
      self.key = nn.Linear(n_lin, head_size, bias=False)
@@ -21,7 +23,9 @@ class gHead(nn.Module):
     return out
 
 class gMultiHeadAttention(nn.Module):
-  ''' '''
+  ''' 
+  Multi-headed attention block
+  '''
   def __init__(self, n_heads, head_size):
     super().__init__()
     self.heads = nn.ModuleList([gHead(head_size) for _ in range(n_heads)])
@@ -33,3 +37,36 @@ class gMultiHeadAttention(nn.Module):
     out = self.proj(out)
     out = self.dropout(out)
     return out
+  
+class LgBlock(nn.Module):
+  ''' 
+  Linear no residual connection block for generator module
+  '''
+  def __init__(self, n_heads):
+    super().__init__()
+    head_size = n_lin // n_heads
+    self.sa = gMultiHeadAttention(n_heads, head_size)
+    self.norm1 = nn.BatchNorm1d(n_lin)
+    self.relu = nn.LeakyReLU()
+
+  def forward(self, x):
+    x = x + self.sa(x)
+    x = self.norm1(x)
+    x = self.relu(x)
+    return x
+
+class LcBlock(nn.Module):
+  ''' 
+  Linear no residual connection block for critic module
+  '''
+  def __init__(self, n_in, n_out, d_p, r_a):
+    super().__init__()
+    self.lin = nn.Linear(n_in, n_out)
+    self.dp = nn.Dropout(d_p)
+    self.relu = nn.LeakyReLU(r_a)
+
+  def forward(self, x):
+    x = self.lin(x)
+    x = self.relu(x)
+    x = self.dp(x)
+    return x
