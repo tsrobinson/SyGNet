@@ -1,5 +1,5 @@
 from .requirements import *
-from .attention import *
+from .blocks import *
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +52,11 @@ class Generator(nn.Module):
         hidden_sizes (list of ints): A list of ints, containing the number of nodes in each hidden layer of the generator network
         output_size (int): The number of output nodes
         mixed_activation (boolean): Whether to use a mixed activation function final layer (default = True). If set to false, categorical and binary columns will not be properly transformed in generator output.
+        attention (boolean): Whether to use a multi-headed attention model (default = True, if False then the architecture is a "SyGNet-LN1" feed-forward model)
         mixed_act_indices (list): Formatted list of continuous, positive continuous, binary, and softmax column indices (default = None).
         mixed_act_funcs (list): List of functions corresponding to elements of mixed_act_indices (default = None).
         dropout_p (float): The proportion of hidden nodes to be dropped randomly during training
         relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions (default = 0.1; note: this default is an order larger than torch default.)
-        layer_norm (boolean): Whether to include layer normalization in network (default = True)
         device (str): Either 'cuda' or 'cpu', used to correctly initialise mixed activation layer (default = 'cpu')
 
     Attributes:
@@ -64,10 +64,6 @@ class Generator(nn.Module):
         node_sizes (list): A list of node sizes per layer of the network
         dropout_p (float): The proportion of hidden nodes to be dropped randomly during training
         relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions
-        linears (torch.nn.ModuleList): A torch-formatted list of linear layers in the network
-        dropouts (torch.nn.ModuleList): A torch-formatted list of dropout layers in the network
-        hidden_acts (torch.nn.ModuleList): A torch-formatted list of leaky-ReLU activation functions
-        layer_norms (torch.nn.ModuleList): A torch-formatted list of LayerNorm functions
         out (nn.Module): The final activation function, either of class nn.Identity() or _MixedActivation()
 
     """
@@ -75,46 +71,44 @@ class Generator(nn.Module):
     def __init__(
         self, 
         input_size, 
-        hidden_sizes, 
-        output_size, 
+        output_size,
+        n_blocks,
+        hidden_nodes,
         mixed_activation, 
+        attention = True,
+        n_heads = 8,
         mix_act_indices = None, 
         mix_act_funcs = None, 
         dropout_p = 0.2, 
-        layer_norm = True, 
-        relu_alpha = 0.1, 
-        device = 'cpu'
+        relu_alpha = 0.01, 
+        device = 'cpu',
         ):
         super(Generator, self).__init__()
-        self.output_size = output_size
-        self.node_sizes = [input_size] + hidden_sizes + [output_size]
-
-        self.linears = nn.ModuleList(
-            [nn.Linear(self.node_sizes[i-1], self.node_sizes[i]) for i in range(1, len(self.node_sizes))]
-            )
-
-        if layer_norm:
-            self.layer_norms = nn.ModuleList(
-                [nn.LayerNorm(self.node_sizes[i+1]) for i in range(len(self.node_sizes)-2)]
-                )
-        else:
-            self.layer_norms = nn.ModuleList()
+        self.output_size = output_size # Generalization to allow for CGAN
         
-        self.relu_alpha = relu_alpha
-        self.hidden_acts = nn.ModuleList(
-            [nn.LeakyReLU(negative_slope = self.relu_alpha) for i in range(len(self.node_sizes)-2)]
-            )
+        self.n_blocks = n_blocks
+        self.hidden_nodes = hidden_nodes
 
         if dropout_p < 0 or dropout_p > 1:
             logger.error("dropout_p must be a real number in the range [0,1]")
-        elif dropout_p == 0:
-            self.dropout_p = dropout_p
-            self.dropouts = nn.ModuleList()
         else:
             self.dropout_p = dropout_p
-            self.dropouts = nn.ModuleList(
-                [nn.Dropout(p = self.dropout_p) for i in range(len(self.node_sizes)-2)]
-                )
+    
+        self.relu_alpha = relu_alpha
+
+        self.lin_in = nn.Linear(input_size, hidden_nodes, bias=True)
+
+        if attention:
+            self.n_heads = n_heads
+            self.blocks = nn.Sequential(*[LgBlock(n_heads=n_heads, n_lin = hidden_nodes) for _ in range(n_blocks)])
+
+        else:
+            self.blocks = nn.Sequential(
+                *[LcBlock(nodes = hidden_nodes, 
+                          d_p = self.dropout_p,
+                          r_a = self.relu_alpha) for i in range(n_blocks - 1)])
+            
+        self.lin_out = nn.Linear(hidden_nodes, output_size, bias=True)
         
         if mixed_activation:
             self.out = _MixedActivation(mix_act_indices, mix_act_funcs, device)
@@ -132,20 +126,11 @@ class Generator(nn.Module):
             x (Tensor): Output data
 
         """
-        logger.debug("GENERATOR FORWARD")
-        for i in range(len(self.linears)):
-            logger.debug("Layer "+str(i)+": Linear")
-            x = self.linears[i](x)
-            if i < len(self.layer_norms):
-                logger.debug("Layer "+str(i)+": LN")
-                x = self.layer_norms[i](x)
-            if i < len(self.hidden_acts):
-                logger.debug("Layer "+str(i)+": Leaky ReLU")
-                x = self.hidden_acts[i](x)
-            if i < len(self.dropouts):
-                logger.debug("Layer "+str(i)+": Dropout")
-                x = self.dropouts[i](x)
-        logger.debug("Output activation")
+        logger.debug("GENERATOR: forward pass")
+        x = self.lin_in(x)
+        x = self.blocks(x)
+        x = self.lin_out(x)
+        logger.debug("GENERATOR: output activation")
         x = self.out(x)
         return x
 
@@ -154,12 +139,13 @@ class Critic(nn.Module):
 
     Args:
         input_size (int): The number of input nodes
-        hidden_sizes (list of ints): A list of ints, containing the number of nodes in each hidden layer of the discriminator network
+        n_blocks (int): The number of hidden blocks to include
+        hidden_nodes (int): The number of nodes per layer in the *hidden* linear layers
         dropout_p (float): The proportion of hidden nodes to be dropped randomly during training
         relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions (default = 0.1; note: this default is an order larger than torch default.)
 
     Attributes:
-        n.blocks (int): Number of hidden blocks
+        n_blocks (int): Number of hidden blocks
         lin1 (torch.nn.ModuleList): Input layer to the network
         blocks (torch.nn.Sequential): A torch-formatted list of linear blocks in the network (linear -> dropout -> leakReLU)
         dropout_p (float): The proportion of hidden nodes to be dropped randomly during training
@@ -168,9 +154,10 @@ class Critic(nn.Module):
 
     """
 
-    def __init__(self, input_size, hidden_sizes, dropout_p = 0.2, relu_alpha = 0.01):
+    def __init__(self, input_size, n_blocks, hidden_nodes, dropout_p = 0.2, relu_alpha = 0.01):
         super(Critic, self).__init__()
-        self.n_blocks = len(hidden_sizes)
+        self.n_blocks = n_blocks
+        self.hidden_nodes = hidden_nodes
         self.relu_alpha = relu_alpha
         
         if dropout_p < 0 or dropout_p > 1:
@@ -178,14 +165,14 @@ class Critic(nn.Module):
         else:
             self.dropout_p = dropout_p
 
-
-        self.lin1 = nn.Linear(input_size, hidden_sizes[0], bias=True)
+        # Layers
+        self.lin1 = nn.Linear(input_size, hidden_nodes, bias=True)
         self.blocks = nn.Sequential(
-            *[LcBlock(n_in = hidden_sizes[i],
-                      n_out = hidden_sizes[i+1], 
+            *[LcBlock(n_in = hidden_nodes,
+                      n_out = hidden_nodes, 
                       d_p = self.dropout_p, 
-                      r_a = self.relu_alpha) for i in range(self.n_blocks - 1)])
-        self.out = nn.Linear(hidden_sizes[-1], 1, bias=True) 
+                      r_a = self.relu_alpha) for i in n_blocks])
+        self.out = nn.Linear(hidden_nodes, 1, bias=True)
         
 
     def forward(self, x):

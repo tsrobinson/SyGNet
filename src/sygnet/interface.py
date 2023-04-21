@@ -27,7 +27,7 @@ class SygnetModel:
         """SyGNet model object
 
         Args:
-            mode (str): One of ["basic","wgan","cgan"]. Determines whether to use basic GAN, Wasserstein loss, or Conditional GAN training method (default = "wgan").
+            mode (str): One of ["wgan","cgan"]. Determines whether to use Wasserstein loss or Conditional GAN training method (default = "wgan").
             hidden_nodes (list of ints, or [list of ints, list of ints]): The number of nodes in each hidden layer of the generator/discriminator network (default = [256, 256]). By default, both models are assigned the same hidden structure.         
             dropout_p, disc_dropout (float, or [float, float]): The proportion of hidden nodes to be dropped randomly during training.
             layer_norms (boolean, or [boolean, boolean]): Whether to include layer normalization in network (default = True).
@@ -76,7 +76,7 @@ class SygnetModel:
         self.disc_losses = []
 
         # Check args
-        if self.mode not in ['basic','wgan','cgan']:
+        if self.mode not in ['wgan','cgan']:
             logger.error("Argument `mode` must be one of 'basic', 'wgan', or 'cgan'")
 
         # Get hidden node sizes

@@ -38,11 +38,31 @@ class gMultiHeadAttention(nn.Module):
     out = self.dropout(out)
     return out
   
+class gLN1(nn.Module):
+  '''
+  SyGNet-LN1 block option when you do not want MHA
+  '''
+  def __init__(self, n_in, n_out, d_p, r_a):
+    super().__init__()
+    self.lin = nn.Linear(n_in, n_out)
+    self.ln = nn.LayerNorm(n_out)
+    self.relu = nn.LeakyReLU(r_a)
+    self.dp = nn.Dropout(d_p)
+
+  def forward(self, x):
+    x = self.lin(x)
+    x = self.ln(x)
+    x = self.relu(x)
+    x = self.dp(x)
+    return x
+
+
+  
 class LgBlock(nn.Module):
   ''' 
   Linear no residual connection block for generator module
   '''
-  def __init__(self, n_heads):
+  def __init__(self, n_heads, n_lin):
     super().__init__()
     head_size = n_lin // n_heads
     self.sa = gMultiHeadAttention(n_heads, head_size)
@@ -59,9 +79,9 @@ class LcBlock(nn.Module):
   ''' 
   Linear no residual connection block for critic module
   '''
-  def __init__(self, n_in, n_out, d_p, r_a):
+  def __init__(self, nodes, d_p, r_a):
     super().__init__()
-    self.lin = nn.Linear(n_in, n_out)
+    self.lin = nn.Linear(nodes, nodes)
     self.dp = nn.Dropout(d_p)
     self.relu = nn.LeakyReLU(r_a)
 
