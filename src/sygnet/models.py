@@ -159,21 +159,17 @@ class Critic(nn.Module):
         relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions (default = 0.1; note: this default is an order larger than torch default.)
 
     Attributes:
-        node_sizes (list): A list of node sizes per layer of the network
-        linears (torch.nn.ModuleList): A torch-formatted list of linear layers in the network
+        n.blocks (int): Number of hidden blocks
+        lin1 (torch.nn.ModuleList): Input layer to the network
+        blocks (torch.nn.Sequential): A torch-formatted list of linear blocks in the network (linear -> dropout -> leakReLU)
         dropout_p (float): The proportion of hidden nodes to be dropped randomly during training
         relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions
-        linears (torch.nn.ModuleList): A torch-formatted list of linear layers in the network
-        dropouts (torch.nn.ModuleList): A torch-formatted list of dropout layers in the network
-        hidden_acts (torch.nn.ModuleList): A torch-formatted list of leaky-ReLU activation functions
-        out (nn.Module): The final activation function, always nn.Sigmoid()
+        out (nn.Module): The final output layer (the critic scores)
 
     """
 
     def __init__(self, input_size, hidden_sizes, dropout_p = 0.2, relu_alpha = 0.01):
         super(Critic, self).__init__()
-     
-        self.node_sizes = [input_size] + hidden_sizes + [1]
         self.n_blocks = len(hidden_sizes)
         self.relu_alpha = relu_alpha
         
@@ -199,8 +195,7 @@ class Critic(nn.Module):
             x (Tensor): Input data
 
         Returns:
-            x (Tensor): If using a Discriminator, the probability of each input observation being real (1) or fake (0). 
-                        If using a Critic, the score of each input observation's 'realness'.
+            x (Tensor): The score of each input observation's 'realness'.
 
         """
         logger.debug("DISCRIMINATOR FORWARD")
