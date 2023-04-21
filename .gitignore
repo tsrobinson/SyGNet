@@ -4,3 +4,4 @@ local_tests/**
 .ipynb_checkpoints/*
 test/__pychache__/*
 src/sygnet/__pychache__/*
+.DS_store
