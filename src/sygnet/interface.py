@@ -249,11 +249,12 @@ class SygnetModel:
             'generator' : self.generator, 
             'critic' : self.critic,
             'epochs' : epochs, 
-            'device' : device,
+            'num_cols' : self.num_idx,
             'batch_size' : batch_size,
             'learning_rates' : learning_rates,
             'lmbda' : lmbda,
-            'use_tensorboard' : use_tensorboard
+            'device' : device,
+            'use_tensorboard' : use_tensorboard,
         }
 
         if self.mode == "wgan":

@@ -96,16 +96,18 @@ def _preprocess_df(df):
     df_num = df.drop(categorical_cols, axis=1)
     # fill missing numeric values
     df_num = df_num.fillna(df_num.median())
+    
     # get ordered list of column names
     df_cols = df_num.columns.tolist() + categorical_cols
     df_num = scaler.fit_transform(df_num)
     transformers = (OHE, scaler)
+    
     # 3. finding idx for each original categorical column
     col_idx, col_fs = [], []
     
     # Numeric cols idx
     if len(numeric_cols) != 0:
-        col_idx_tensor = torch.Tensor([df.columns.get_loc(c) for c in numeric_cols])
+        col_idx_tensor = torch.Tensor([c for c in range(len(numeric_cols))])
         col_idx.append(col_idx_tensor)
         col_fs.append('identity')
 

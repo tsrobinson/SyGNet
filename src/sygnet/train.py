@@ -66,6 +66,8 @@ def train_wgan(
     generator_losses = []
     critic_losses = []
 
+    num_cols = num_cols.to(device)
+
     # Training loop
     tbar = trange(epochs, desc="Epoch")
     for epoch in tbar:
@@ -155,12 +157,13 @@ def train_conditional(
     generator, 
     critic,
     epochs, 
-    device,
+    num_cols,
     batch_size,
-    learning_rate,
-    adam_betas,
+    learning_rates,
     lmbda,
-    use_tensorboard
+    use_tensorboard,
+    device,
+    noise_std = 0.01,
     ):
     """Training function for conditional GAN (using Wasserstein loss)
 

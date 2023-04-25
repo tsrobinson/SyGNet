@@ -173,7 +173,7 @@ class Critic(nn.Module):
         self.blocks = nn.Sequential(
             *[LcBlock(n_lin = self.hidden_nodes,
                       d_p = self.dropout_p, 
-                      r_a = self.relu_alpha) for i in n_blocks])
+                      r_a = self.relu_alpha) for _ in range(n_blocks)])
         self.out = nn.Linear(hidden_nodes, 1, bias=True)
         
 
