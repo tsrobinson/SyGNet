@@ -34,7 +34,7 @@ class TestSum(unittest.TestCase):
 
         with self.subTest():
             self.assertEqual(
-                test_mod.sample(5, decode = True, as_pandas = False).shape[1],
+                test_mod.sample(1, decode = True, as_pandas = False).shape[1],
                 8
             )
         with self.subTest():
