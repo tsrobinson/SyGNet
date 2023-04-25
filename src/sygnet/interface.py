@@ -88,7 +88,7 @@ class SygnetModel:
         if self.mode not in ['wgan','cgan']:
             logger.error("Argument `mode` must be one of 'wgan' or 'cgan'")
 
-        if type(n_blocks) is float:
+        if type(n_blocks) is int:
             self.gen_blocks = self.crit_blocks = n_blocks
         elif len(n_blocks) == 2:
             self.gen_blocks, self.crit_blocks = n_blocks
