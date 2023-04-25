@@ -4,8 +4,8 @@ import os.path
 from pathlib import Path
 
 from .requirements import *
-from .models import Generator, Discriminator, Critic, ConditionalWrapper
-from .train import train_basic, train_wgan, train_conditional
+from .models import Generator, Critic, ConditionalWrapper
+from .train import train_wgan, train_conditional
 from .dataloaders import GeneratedData, _ohe_colnames
 
 
@@ -14,30 +14,35 @@ logger = logging.getLogger(__name__)
 class SygnetModel:
 
     def __init__(
-        self, 
+        self,
+        # Model type 
         mode,
+        attention = True,
 
         # Generator and Discriminator options
-        hidden_nodes = [256,256], 
+        n_blocks = 2,
+        hidden_nodes = 256, 
         dropout_p = 0.2, 
-        layer_norms = True, 
-        relu_leak = 0.1,
+        relu_leak = 0.01,
+        n_heads = None,
         mixed_activation = True
         ):
         """SyGNet model object
 
         Args:
             mode (str): One of ["wgan","cgan"]. Determines whether to use Wasserstein loss or Conditional GAN training method (default = "wgan").
-            hidden_nodes (list of ints, or [list of ints, list of ints]): The number of nodes in each hidden layer of the generator/discriminator network (default = [256, 256]). By default, both models are assigned the same hidden structure.         
-            dropout_p, disc_dropout (float, or [float, float]): The proportion of hidden nodes to be dropped randomly during training.
-            layer_norms (boolean, or [boolean, boolean]): Whether to include layer normalization in network (default = True).
-            relu_leak (float, or [float, float]): The negative slope parameter used to construct hidden-layer ReLU activation functions (default = 0.1; note: this default is an order larger than torch default).
+            attention (bool): Whether to use self-attention within the generator model (default = True).
+            n_blocks (int, or [int, int]): The number of hidden blocks to use in the generator and critic networks (default = 2). See notes for more details.
+            hidden_nodes (int, or [int, int]): The number of nodes in each hidden layer of the generator and critic networks (default = 256). 
+            dropout_p (float, or [float, float]): The proportion of hidden nodes to be dropped randomly during training from the generator and critic respectively (default = 0.2).
+            relu_leak (float, or [float, float]): The negative slope parameters used to construct hidden-layer ReLU activation functions (default = 0.01)
+            n_heads (int): The number of attention heads within the self-attention mechanism (default = None).
             mixed_activation (boolean): Whether to use a mixed activation function final layer for the generator (default = True). If set to false, categorical and binary columns will not be properly transformed in generator output.
 
         Notes: 
-            hidden_nodes, dropout_p, layer_norms, and relu_leak can all accept list arguments of length 2, specifying parameters for the [generator, discriminator] respectively.
+            hidden_nodes, dropout_p, and relu_leak can all accept list arguments of length 2, specifying parameters for the [generator, discriminator] respectively.
             Parameters for the generator and discriminator are set independently (with identical default settings). Both models are modified in-place.
-            Arguments referring to "discriminators" cover both discriminator and critic networks. When mode = "basic" the discriminator model output is the probability of an observation being real. When mode != "basic", the discriminator model is a critic and provides an unbounded score of the observations "realness".
+            The hidden blocks of the network comprise different steps dependent on the architecture. At present, these are fixed by the `attention` argument. When attention = True, a single block comprises self attention -> batch normalisation -> leaky-ReLU activation. If attention = False, a single block comprises a linear layer -> layer normalisation -> leaky-ReLU -> dropout.  
 
         Attributes:
             mode (str):
@@ -51,7 +56,6 @@ class SygnetModel:
             disc_hidden(list)
             gen_dropout (float)
             disc_dropout (float)
-            gen_ln (bool)
             disc_lin (bool)
             gen_leak (float)
             disc_leak (float)
@@ -61,53 +65,59 @@ class SygnetModel:
 
         """
         self.mode = mode
+        self.attention = attention
+        self.n_heads = n_heads
+
         self.input_size = None
         self.label_size = None
         self.output_size = None
         
         self.generator = None
-        self.discriminator = None
+        self.critic = None
 
         self.mixed_activation = mixed_activation
         self.data_encoders = None
         self.colnames = None
+
+        self.num_idx = None
 
         self.gen_losses = []
         self.disc_losses = []
 
         # Check args
         if self.mode not in ['wgan','cgan']:
-            logger.error("Argument `mode` must be one of 'basic', 'wgan', or 'cgan'")
+            logger.error("Argument `mode` must be one of 'wgan' or 'cgan'")
+
+        if type(n_blocks) is float:
+            self.gen_blocks = self.crit_blocks = n_blocks
+        elif len(n_blocks) == 2:
+            self.gen_blocks, self.crit_blocks = n_blocks
+        else:
+            logger.error("Argument `n_blocks` must either be a float or a list/tuple of length 2")
 
         # Get hidden node sizes
         if type(hidden_nodes[0]) is list:
-            self.gen_hidden, self.disc_hidden = hidden_nodes
-        elif type(hidden_nodes) is list:
-            self.gen_hidden = self.disc_hidden = hidden_nodes
+            logger.error("DEPRECATED: Argument `hidden_nodes` must now either be a single integer or a list of two integers, specifying the number of hidden nodes per block for the generator and critic respectively")
+        elif len(hidden_nodes) == 2:
+            self.gen_hidden, self.crit_hidden = hidden_nodes
+        elif type(hidden_nodes) is int:
+            self.gen_hidden = self.crit_hidden = hidden_nodes
         else:
-            logger.error("Argument `hidden_nodes` must either be a list of hidden layer sizes, or a list/tuple of length 2 where each element is a separate list of hidden layer sizes for the generator and discriminator respectively")
+            logger.error("Argument `hidden_nodes` must either be a list of hidden layer sizes, or an integer")
 
         # Get dropout proportions
         if type(dropout_p) is float:
-            self.gen_dropout = self.disc_dropout = dropout_p
+            self.gen_dropout = self.crit_dropout = dropout_p
         elif len(dropout_p) == 2:
-            self.gen_dropout, self.disc_dropout = dropout_p
+            self.gen_dropout, self.crit_dropout = dropout_p
         else:
             logger.error("Argument `dropout_p` must either be a float or a list/tuple of length 2")
 
-        # Get layer norm toggles
-        if type(layer_norms) is bool:
-            self.gen_ln = self.disc_ln = layer_norms
-        elif len(layer_norms) == 2:
-            self.gen_ln, self.disc_ln = layer_norms
-        else:
-            logger.error("Argument `layer_norms` must either be a float or a list/tuple of length 2")
-
         # Get leaky alpha values
         if type(relu_leak) is float:
-            self.gen_leak = self.disc_leak = relu_leak
-        elif len(layer_norms) == 2:
-            self.gen_leak, self.disc_leak = relu_leak
+            self.gen_leak = self.crit_leak = relu_leak
+        elif len(relu_leak) == 2:
+            self.gen_leak, self.crit_leak = relu_leak
         else:
             logger.error("Argument `relu_leak` must either be a float or a list/tuple of length 2.") 
     
@@ -118,8 +128,7 @@ class SygnetModel:
         epochs=10, 
         device='cpu',
         batch_size = None,
-        learning_rate = 0.0001,
-        adam_betas = (0.0, 0.9),
+        learning_rates = 0.0001,
         lmbda = 10,
         use_tensorboard = False,
         save_model = False,
@@ -134,8 +143,7 @@ class SygnetModel:
             epochs (int): Number of training epochs
             device (str): Either 'cuda' for GPU training, or 'cpu' (default='cpu')
             batch_size (int): Number of training observations per batch (default = None). If left at default, the batch size is set to 1/20th of the overall length of the data.
-            learning_rate (float): The learning rate for the Adam optimizer (default = 0.0001)
-            adam_betas (tuple): The beta parameters for the Adam optimizer, only used in wgan and cgan modes
+            learning_rates (float or [float, float]): The learning rates for the generator and critic AdamW optimizers
             lmbda (float): Scalar penalty term for applying gradient penalty as part of Wasserstein loss, only used in wgan and cgan modes
             use_tensorboard (boolean): If True, creates tensorboard output capturing key training metrics (default = True)
             save_model (bool): Whether or not to save the model after training (default = False)
@@ -159,6 +167,13 @@ class SygnetModel:
             logger.warning(f"Model mode is set to '{self.mode}' but no columns specified in 'cond_cols'. Switching to WGAN architecture.")
             self.mode = "wgan"
 
+        if type(learning_rates) is float:
+            learning_rates = [learning_rates, learning_rates]
+        elif len(learning_rates) == 2:
+            learning_rates = learning_rates
+        else:
+            logger.error("Learning rates argument must be a float or a list of two floats, for the generator and discriminator respectively.")
+
         # Set file path and static part of filename
         if save_model:
             if not isinstance(save_loc, str):
@@ -178,97 +193,74 @@ class SygnetModel:
         if self.mode != "cgan":
             torch_data = GeneratedData(real_data = data)
             self.input_size = self.output_size = torch_data.x.shape[1]
-            self.data_encoders = [torch_data.x_OHE]
+            # self.data_encoders = [torch_data.x_OHE]
+            self.data_encoders = torch_data.x_transformers
 
         else:
             torch_data = GeneratedData(real_data = data, conditional = True, cond_cols = cond_cols)
             self.input_size = self.output_size = torch_data.x.shape[1]
             self.label_size = torch_data.labels.shape[1]
-            self.data_encoders = [torch_data.x_OHE, torch_data.labels_OHE]
+            # self.data_encoders = [torch_data.x_OHE, torch_data.labels_OHE]
+            self.data_encoders = torch_data.x_transformers
+            self.label_encoders = torch_data.labels_transformers
 
         self.colnames = torch_data.colnames
+        self.num_idx = torch_data.x_indxs[0].long()
         
         ## Build the models (if not already built)
 
         if self.generator is None:      
 
             self.generator = Generator(
-                input_size = self.input_size,
-                hidden_sizes = self.gen_hidden,
+
+                input_size = self.input_size, 
                 output_size = self.output_size,
+                n_blocks = self.gen_blocks,
+                hidden_nodes = self.gen_hidden,
+                attention = self.attention,
+                n_heads = self.n_heads,
                 mixed_activation = self.mixed_activation,
                 mix_act_indices=torch_data.x_indxs,
                 mix_act_funcs=torch_data.x_funcs,
                 dropout_p = self.gen_dropout,
-                layer_norm = self.gen_ln,
                 relu_alpha=self.gen_leak,
-                device=device
+                device=device,
                 )
 
-            if self.mode == "basic":
-                self.discriminator = Discriminator(
-                    input_size = self.input_size,
-                    hidden_sizes = self.disc_hidden,
-                    dropout_p = self.disc_dropout,
-                    layer_norm = self.disc_ln,
-                    relu_alpha = self.disc_leak
-                    )
-            else:
-                self.discriminator = Critic(
-                    input_size = self.input_size,
-                    hidden_sizes = self.disc_hidden,
-                    dropout_p = self.disc_dropout,
-                    layer_norm = self.disc_ln,
-                    relu_alpha = self.disc_leak
-                    )
+            self.critic = Critic(
+                input_size = self.input_size, 
+                n_blocks = self.crit_blocks, 
+                hidden_nodes = self.crit_hidden, 
+                dropout_p = self.crit_dropout, 
+                relu_alpha = self.crit_leak,
+            )
 
             # Wrap conditional GANs
             if self.mode == "cgan":
                 self.generator = ConditionalWrapper(latent_size = self.input_size, label_size = self.label_size, main_network = self.generator)
-                self.discriminator = ConditionalWrapper(latent_size = self.input_size, label_size = self.label_size, main_network = self.discriminator)
+                self.critic = ConditionalWrapper(latent_size = self.input_size, label_size = self.label_size, main_network = self.critic)
 
         ## Train the models
 
         if batch_size is None:
             batch_size = int(np.floor(data.shape[0]/20))
 
-        if self.mode == "basic":
-            g_loss, d_loss = train_basic(
-                training_data = torch_data, 
-                generator = self.generator, 
-                discriminator = self.discriminator,
-                epochs = epochs, 
-                device = device,
-                batch_size = batch_size,
-                learning_rate = learning_rate,
-                use_tensorboard = use_tensorboard
-            )
-        elif self.mode == "wgan":
-            g_loss, d_loss = train_wgan(
-                training_data = torch_data, 
-                generator = self.generator, 
-                critic = self.discriminator,
-                epochs = epochs, 
-                device = device,
-                batch_size = batch_size,
-                learning_rate = learning_rate,
-                adam_betas = adam_betas,
-                lmbda = lmbda,
-                use_tensorboard = use_tensorboard
-            )
+        train_args = {
+            'training_data' : torch_data, 
+            'generator' : self.generator, 
+            'critic' : self.critic,
+            'epochs' : epochs, 
+            'device' : device,
+            'batch_size' : batch_size,
+            'learning_rates' : learning_rates,
+            'lmbda' : lmbda,
+            'use_tensorboard' : use_tensorboard
+        }
+
+        if self.mode == "wgan":
+            g_loss, d_loss = train_wgan(**train_args)
         elif self.mode == "cgan":
-            g_loss, d_loss = train_conditional(
-                training_data = torch_data, 
-                generator = self.generator, 
-                critic = self.discriminator,
-                epochs = epochs, 
-                device = device,
-                batch_size = batch_size,
-                learning_rate = learning_rate,
-                adam_betas = adam_betas,
-                lmbda = lmbda,
-                use_tensorboard = use_tensorboard
-            )
+            g_loss, d_loss = train_conditional(**train_args)
         
         self.gen_losses += g_loss
         self.disc_losses += d_loss
@@ -312,14 +304,20 @@ class SygnetModel:
                 
                 seed_latent = torch.rand(size=(nobs, self.generator.latent_size))
 
-                labels_colnames_cat = self.data_encoders[1].feature_names_in_ if self.data_encoders[1].categories_ else []
+                labels_colnames_cat = self.label_encoders[0].feature_names_in_ if self.label_encoders[0].categories_ else []
                 labels_cat = labels[labels_colnames_cat]
 
                 labels_num = labels.drop(labels_colnames_cat, axis = 1)
                 labels_colnames_num = labels_num.columns
 
                 seed_labels = torch.from_numpy(
-                    np.concatenate((labels_num, self.data_encoders[1].transform(labels_cat)), axis=1)
+                    np.concatenate(
+                        (
+                            self.label_encoders[1].transform(labels_num), 
+                            self.label_encoders[0].transform(labels_cat)
+                        ), 
+                        axis=1
+                    )
                 ).float()
                 
         else:
@@ -351,6 +349,9 @@ class SygnetModel:
                     (synth_output[:,:-n_cats],
                     self.data_encoders[0].inverse_transform(synth_output[:,-n_cats:]))
                 )
+            else:
+                synth_output = self.data_encoders[1].inverse_transform(synth_output)
+            
             if self.mode == "cgan":
                 synth_output = np.column_stack([synth_output, np.array(labels)])
                 out_col_order = self.colnames[:-len(labels.columns)] + labels.columns.tolist()
@@ -367,7 +368,6 @@ class SygnetModel:
                 X_num_cols = self.colnames[:-self.data_encoders[0].n_features_in_]
                 out_col_order = X_num_cols + X_cat_cols
                 
-        
         # Convert to pandas if required:
         if as_pandas:
             synth_output = pd.DataFrame(synth_output)

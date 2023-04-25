@@ -31,14 +31,12 @@ class _MixedActivation(nn.Module):
     def forward(self, input: Tensor) -> Tensor:
         mixed_out = []
         for number, index_ in enumerate(self.indices):
-            if self.funcs[number] == 'softmax':
-                mixed_out.append(nn.functional.softmax(torch.index_select(input, 1, index_.type(torch.int32).to(self.device)), dim=1))
-            elif self.funcs[number] == 'relu':
-                mixed_out.append(nn.functional.relu(torch.index_select(input, 1, index_.type(torch.int32).to(self.device))))
-            elif self.funcs[number] == 'sigmoid':
-                mixed_out.append(torch.sigmoid(torch.index_select(input, 1, index_.type(torch.int32).to(self.device))))
-            elif self.funcs[number] == 'identity':
+            if self.funcs[number] == 'identity':
                 mixed_out.append(self.identity(torch.index_select(input, 1, index_.type(torch.int32).to(self.device))))
+            elif self.funcs[number] == 'softmax':
+                mixed_out.append(nn.functional.gumbel_softmax(torch.index_select(input, 1, index_.type(torch.int32).to(self.device)),tau=0.66, hard=False, dim=1))
+            else:
+              pass
 
         col_order = torch.argsort(torch.cat(self.indices))
         return torch.cat(mixed_out,1)[:,col_order]
@@ -49,14 +47,17 @@ class Generator(nn.Module):
 
     Args:
         input_size (int): The number of input nodes
-        hidden_sizes (list of ints): A list of ints, containing the number of nodes in each hidden layer of the generator network
-        output_size (int): The number of output nodes
+        output_size (int): The number of output nodes (which may not equal input_size if using a CGAN architecture)
+        n_blocks (int): The number of hidden layer blocks
+        hidden_nodes (int): The number of nodes in each hidden layer of the generator network
         mixed_activation (boolean): Whether to use a mixed activation function final layer (default = True). If set to false, categorical and binary columns will not be properly transformed in generator output.
+        
         attention (boolean): Whether to use a multi-headed attention model (default = True, if False then the architecture is a "SyGNet-LN1" feed-forward model)
+        n_heads (int): The number of heads to include in attention block (default = None). Not required when attention = False.
         mixed_act_indices (list): Formatted list of continuous, positive continuous, binary, and softmax column indices (default = None).
         mixed_act_funcs (list): List of functions corresponding to elements of mixed_act_indices (default = None).
         dropout_p (float): The proportion of hidden nodes to be dropped randomly during training
-        relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions (default = 0.1; note: this default is an order larger than torch default.)
+        relu_alpha (float): The negative slope parameter used to construct hidden-layer ReLU activation functions (default = 0.01).
         device (str): Either 'cuda' or 'cpu', used to correctly initialise mixed activation layer (default = 'cpu')
 
     Attributes:
@@ -76,7 +77,7 @@ class Generator(nn.Module):
         hidden_nodes,
         mixed_activation, 
         attention = True,
-        n_heads = 8,
+        n_heads = None,
         mix_act_indices = None, 
         mix_act_funcs = None, 
         dropout_p = 0.2, 
@@ -99,14 +100,16 @@ class Generator(nn.Module):
         self.lin_in = nn.Linear(input_size, hidden_nodes, bias=True)
 
         if attention:
-            self.n_heads = n_heads
-            self.blocks = nn.Sequential(*[LgBlock(n_heads=n_heads, n_lin = hidden_nodes) for _ in range(n_blocks)])
+            self.n_heads = n_heads if n_heads is not None else 8
+            self.blocks = nn.Sequential(
+                *[LgBlock(n_heads=self.n_heads, n_lin = self.hidden_nodes, d_p = self.dropout_p) for _ in range(self.n_blocks)]
+            )
 
         else:
             self.blocks = nn.Sequential(
-                *[LcBlock(nodes = hidden_nodes, 
-                          d_p = self.dropout_p,
-                          r_a = self.relu_alpha) for i in range(n_blocks - 1)])
+                *[gLN1(n_lin = self.hidden_nodes, 
+                       d_p = self.dropout_p,
+                       r_a = self.relu_alpha) for i in range(n_blocks - 1)])
             
         self.lin_out = nn.Linear(hidden_nodes, output_size, bias=True)
         
@@ -168,8 +171,7 @@ class Critic(nn.Module):
         # Layers
         self.lin1 = nn.Linear(input_size, hidden_nodes, bias=True)
         self.blocks = nn.Sequential(
-            *[LcBlock(n_in = hidden_nodes,
-                      n_out = hidden_nodes, 
+            *[LcBlock(n_lin = self.hidden_nodes,
                       d_p = self.dropout_p, 
                       r_a = self.relu_alpha) for i in n_blocks])
         self.out = nn.Linear(hidden_nodes, 1, bias=True)
@@ -201,9 +203,9 @@ class ConditionalWrapper(nn.Module):
         self.combiner = nn.Sequential(
             nn.Linear(latent_size+label_size, latent_size),
             nn.LeakyReLU(negative_slope=relu_alpha),
-            nn.Linear(latent_size, latent_size),
-            nn.LayerNorm(latent_size),
-            nn.LeakyReLU(negative_slope=relu_alpha)
+            # nn.Linear(latent_size, latent_size), # Think this is excessive as it can be controlled through the regular network
+            # nn.LayerNorm(latent_size),
+            # nn.LeakyReLU(negative_slope=relu_alpha)
         )
         self.net = main_network
 
