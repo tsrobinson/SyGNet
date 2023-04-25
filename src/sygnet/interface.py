@@ -96,14 +96,13 @@ class SygnetModel:
             logger.error("Argument `n_blocks` must either be a float or a list/tuple of length 2")
 
         # Get hidden node sizes
-        if type(hidden_nodes[0]) is list:
-            logger.error("DEPRECATED: Argument `hidden_nodes` must now either be a single integer or a list of two integers, specifying the number of hidden nodes per block for the generator and critic respectively")
-        elif len(hidden_nodes) == 2:
+        if len(hidden_nodes) == 2:
             self.gen_hidden, self.crit_hidden = hidden_nodes
         elif type(hidden_nodes) is int:
             self.gen_hidden = self.crit_hidden = hidden_nodes
         else:
-            logger.error("Argument `hidden_nodes` must either be a list of hidden layer sizes, or an integer")
+            logger.warning("Supplying separate lists for each model was removed in v0.0.9")
+            logger.error("Argument `hidden_nodes` must either be a list of hidden layer sizes, or an integer.")
 
         # Get dropout proportions
         if type(dropout_p) is float:
