@@ -34,7 +34,7 @@ classifiers = [
 dependencies = [
     "numpy>=1.21",
     "torch>=1.10.0",
-    "scikit-learn>=1.0",
+    "scikit-learn>=1.2",
     "pandas>=1.4",
     "datetime",
     "tqdm",

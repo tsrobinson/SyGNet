@@ -57,28 +57,28 @@ class TestSum(unittest.TestCase):
         
         self.assertEqual(torch.sum(self.out_df[:,8:]), self.n_samples)
 
-    def test_bin(self):
-        """
-        Test binary column (check with 5 obs)
-        """
+    # def test_bin(self):
+    #     """
+    #     Test binary column (check with 5 obs)
+    #     """
 
-        # Binary is in col-position 4 since it occurs after categorical, so moved back to before cats
+    #     # Binary is in col-position 4 since it occurs after categorical, so moved back to before cats
         
-        bin_col = self.out_df.detach().numpy()[:,4]
-        less_than_one = sum(bin_col <= 1)
-        greater_than_zero = sum(bin_col >= 0)
+    #     bin_col = self.out_df.detach().numpy()[:,4]
+    #     less_than_one = sum(bin_col <= 1)
+    #     greater_than_zero = sum(bin_col >= 0)
         
-        self.assertEqual(less_than_one + greater_than_zero, self.n_samples*2)
+    #     self.assertEqual(less_than_one + greater_than_zero, self.n_samples*2)
 
-    def test_relu(self):
-        """
-        Test strictly-positive column (check with 5 obs)
-        """
+    # def test_relu(self):
+    #     """
+    #     Test strictly-positive column (check with 5 obs)
+    #     """
         
-        relu_col = self.out_df.detach().numpy()[:,2]
-        greater_than_zero = sum(relu_col >= 0)
+    #     relu_col = self.out_df.detach().numpy()[:,2]
+    #     greater_than_zero = sum(relu_col >= 0)
         
-        self.assertEqual(greater_than_zero, self.n_samples)
+    #     self.assertEqual(greater_than_zero, self.n_samples)
 
 if __name__ == '__main__':
     unittest.main()

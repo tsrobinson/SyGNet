@@ -87,7 +87,7 @@ def _preprocess_df(df):
         else:
             pass
     
-    OHE = OneHotEncoder(sparse=False)
+    OHE = OneHotEncoder(sparse_output=False)
     scaler = MinMaxScaler()
     # fill missing categorical columns as nan
     df_cat = df[categorical_cols].fillna('nan')
