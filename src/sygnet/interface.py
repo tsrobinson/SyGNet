@@ -323,6 +323,7 @@ class SygnetModel:
         else:
             seed_data = torch.rand(size=(nobs, self.generator.output_size))
 
+        self.generator.eval()
         with torch.no_grad():
             device = next(self.generator.parameters()).device.type
 
@@ -338,6 +339,8 @@ class SygnetModel:
         
         logger.debug("Generated data")
         logger.debug(synth_output)
+
+        self.generator.train()
 
         if decode:
             n_cat_vars = self.data_encoders[0].n_features_in_
