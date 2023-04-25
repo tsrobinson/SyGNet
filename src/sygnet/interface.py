@@ -90,16 +90,16 @@ class SygnetModel:
 
         if type(n_blocks) is int:
             self.gen_blocks = self.crit_blocks = n_blocks
-        elif len(n_blocks) == 2:
+        elif type(n_blocks) is list and len(n_blocks) == 2:
             self.gen_blocks, self.crit_blocks = n_blocks
         else:
             logger.error("Argument `n_blocks` must either be a float or a list/tuple of length 2")
 
         # Get hidden node sizes
-        if len(hidden_nodes) == 2:
-            self.gen_hidden, self.crit_hidden = hidden_nodes
-        elif type(hidden_nodes) is int:
+        if type(hidden_nodes) is int:
             self.gen_hidden = self.crit_hidden = hidden_nodes
+        elif type(hidden_nodes) is list and len(hidden_nodes) == 2:
+            self.gen_hidden, self.crit_hidden = hidden_nodes
         else:
             logger.warning("Supplying separate lists for each model was removed in v0.0.9")
             logger.error("Argument `hidden_nodes` must either be a list of hidden layer sizes, or an integer.")
@@ -107,7 +107,7 @@ class SygnetModel:
         # Get dropout proportions
         if type(dropout_p) is float:
             self.gen_dropout = self.crit_dropout = dropout_p
-        elif len(dropout_p) == 2:
+        elif type(dropout_p) is list and len(dropout_p) == 2:
             self.gen_dropout, self.crit_dropout = dropout_p
         else:
             logger.error("Argument `dropout_p` must either be a float or a list/tuple of length 2")
@@ -115,7 +115,7 @@ class SygnetModel:
         # Get leaky alpha values
         if type(relu_leak) is float:
             self.gen_leak = self.crit_leak = relu_leak
-        elif len(relu_leak) == 2:
+        elif type(relu_leak) is list and len(relu_leak) == 2:
             self.gen_leak, self.crit_leak = relu_leak
         else:
             logger.error("Argument `relu_leak` must either be a float or a list/tuple of length 2.") 
