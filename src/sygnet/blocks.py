@@ -4,12 +4,12 @@ class gHead(nn.Module):
   ''' 
   Single attention-head module
   '''
-  def __init__(self, head_size):
+  def __init__(self, head_size, n_lin, d_p):
      super().__init__()
      self.key = nn.Linear(n_lin, head_size, bias=False)
      self.query = nn.Linear(n_lin, head_size, bias=False)
      self.value = nn.Linear(n_lin, head_size, bias=False)
-     self.dropout = nn.Dropout(dropout)
+     self.dropout = nn.Dropout(d_p)
 
   def forward(self, x): 
     T,C = x.shape
@@ -28,7 +28,7 @@ class gMultiHeadAttention(nn.Module):
   '''
   def __init__(self, n_heads, head_size, n_lin, d_p):
     super().__init__()
-    self.heads = nn.ModuleList([gHead(head_size) for _ in range(n_heads)])
+    self.heads = nn.ModuleList([gHead(head_size, n_lin, d_p) for _ in range(n_heads)])
     self.proj = nn.Linear(n_heads * head_size, n_lin)
     self.dropout = nn.Dropout(d_p)
 
