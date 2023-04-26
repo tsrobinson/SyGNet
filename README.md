@@ -31,7 +31,7 @@ You can find a demonstration of **sygnet** under [examples/basic_example](exampl
 
 ### Current version: 0.0.9 (alpha release)
 
-**Alpha release**: You should expect both functionality and pipelines to change (rapidly). Comments and bug reports are very welcome!
+**Alpha release**: You should expect both functionality and pipelines to change (rapidly and without warning). Comments and bug reports are very welcome!
 
 Changes:
 
