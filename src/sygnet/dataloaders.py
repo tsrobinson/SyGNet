@@ -1,5 +1,5 @@
 from .requirements import *
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
 
 logger = logging.getLogger(__name__)
 
@@ -40,16 +40,16 @@ class GeneratedData(Dataset):
             data_in.drop(cond_cols, axis = 1, inplace = True)
             
             # Process latent data
-            self.x, self.x_indxs, self.x_funcs, self.x_OHE, self.colnames = _preprocess_df(data_in)
+            self.x, self.x_indxs, self.x_funcs, self.x_transformers, self.colnames = _preprocess_df(data_in)
             self.x = torch.from_numpy(self.x)
 
             # Process conditional labels (no need to save funcs as won't be fed to activation)
-            self.labels,_,_,self.labels_OHE, label_names = _preprocess_df(cond_labels)
+            self.labels,_,_,self.labels_transformers, label_names = _preprocess_df(cond_labels)
             self.labels = torch.from_numpy(self.labels)
             self.colnames += label_names
 
         else:
-            self.x, self.x_indxs, self.x_funcs, self.x_OHE, self.colnames = _preprocess_df(data_in)
+            self.x, self.x_indxs, self.x_funcs, self.x_transformers, self.colnames = _preprocess_df(data_in)
             self.x = torch.from_numpy(self.x)
             self.labels = torch.ones(self.n_samples, 1)
         
@@ -63,70 +63,57 @@ class GeneratedData(Dataset):
 def _preprocess_df(df):
     '''
     Sort and arrange columns for managing mixed activation
-
     Args:
         df(pd.Dataframe): The input data
-
     Returns:
         df (np.array)
         col_idx (list): Tuples with 'column name' and list of one-hot indices for that column plus all numeric columns)
         col_fs (list): List of functions for each column in data
-        OHE (Encoder): sklearn OneHotEncoding object that can be used to inverse transform synthetic data
+        transformers (tuple): OHE object and min-max scaler for inverse data transformation
         df_cols (list): List of column names after column sorting but before one-hot encoding
     '''
     # 1. get categorical colum names
     num_type = ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']  # numeric columns
-    str_type = ['O','category','string']  # select desired data type: 'O' - string
+    str_type = 'O'  # select desired data type: 'O' - string
     categorical_cols = []
-    binary_cols = []
-    positive_cols = []
     numeric_cols = []
     dtypes = df.dtypes.to_dict()
 
     for colname, data_type in dtypes.items():
-        if data_type in str_type:
+        if data_type == str_type:
             categorical_cols.append(colname)
         elif data_type in num_type:
-            if set(df[colname].unique()) == {1,0}:
-                binary_cols.append(colname)
-            elif df[colname].min() >= 0:
-                positive_cols.append(colname)
-            else:
-                numeric_cols.append(colname)
+          numeric_cols.append(colname)
         else:
             pass
-
-    # 2. one-hot encoding, puts categorical columns at the end of the df
-    OHE = OneHotEncoder(sparse=False)
-    cat_df = OHE.fit_transform(df[categorical_cols])
-    df.drop(categorical_cols, axis=1, inplace=True)
-
-    df_cols = df.columns.tolist() + categorical_cols
-
-    # 3. finding idx for each original categorical column
-    col_idx = []
-    col_fs = []
     
-    # Numeric cols indx
+    OHE = OneHotEncoder(sparse_output=False)
+    scaler = MinMaxScaler()
+    # fill missing categorical columns as nan
+    df_cat = df[categorical_cols].fillna('nan')
+    # OHe transform
+    df_cat = OHE.fit_transform(df_cat)
+    df_num = df.drop(categorical_cols, axis=1)
+    # fill missing numeric values
+    df_num = df_num.fillna(df_num.median())
+    
+    # get ordered list of column names
+    df_cols = df_num.columns.tolist() + categorical_cols
+    if df_num.shape[1] > 0:
+        df_num = scaler.fit_transform(df_num)
+    transformers = (OHE, scaler)
+    
+    # 3. finding idx for each original categorical column
+    col_idx, col_fs = [], []
+    
+    # Numeric cols idx
     if len(numeric_cols) != 0:
-        col_idx_tensor = torch.Tensor([df.columns.get_loc(c) for c in numeric_cols])
+        col_idx_tensor = torch.Tensor([c for c in range(len(numeric_cols))])
         col_idx.append(col_idx_tensor)
         col_fs.append('identity')
 
-    # Positive cols
-    if len(positive_cols) != 0:
-        col_idx_tensor = torch.Tensor([df.columns.get_loc(c) for c in positive_cols])
-        col_idx.append(col_idx_tensor)
-        col_fs.append('relu')
-
-    # Binary cols
-    if len(binary_cols) != 0:
-        col_idx_tensor = torch.Tensor([df.columns.get_loc(c) for c in binary_cols])
-        col_idx.append(col_idx_tensor)
-        col_fs.append('sigmoid')
-
-    # Categorical cols
-    n_numeric = df.shape[1]
+    # Categorical cols idx
+    n_numeric = df_num.shape[1]
     cat_current_count = 0
     for var in OHE.categories_:
         one_hot_cols = var.tolist()
@@ -136,8 +123,9 @@ def _preprocess_df(df):
         col_idx.append(col_idx_tensor)
         col_fs.append('softmax')
 
-    df = np.concatenate((df, cat_df), axis = 1, dtype=np.float32)
-    return df, col_idx, col_fs, OHE, df_cols
+    df = np.concatenate((df_num, df_cat), axis = 1, dtype=np.float32) 
+
+    return df, col_idx, col_fs, transformers, df_cols 
 
 def _ohe_colnames(OHE):
     cat_cols = []

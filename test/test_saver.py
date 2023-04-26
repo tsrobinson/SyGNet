@@ -31,8 +31,8 @@ class TestSum(unittest.TestCase):
 
         self.assertTrue(
             torch.equal(
-                model0.generator.state_dict()['linears.1.weight'],
-                model1.generator.state_dict()['linears.1.weight']
+                model0.generator.state_dict()['lin_out.weight'],
+                model1.generator.state_dict()['lin_out.weight']
             )
         )
         
