@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .requirements import *
 from .models import Generator, Critic, ConditionalWrapper
-from .train import train_wgan, train_conditional, train
+from .train import train
 from .dataloaders import GeneratedData, _ohe_colnames
 
 
@@ -258,7 +258,7 @@ class SygnetModel:
         }
 
         if self.mode == "wgan":
-            g_loss, d_loss = train_wgan(**train_args)
+            g_loss, d_loss = train(**train_args, conditional = False)
         elif self.mode == "cgan":
             g_loss, d_loss = train(**train_args, conditional = True)
         
