@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .requirements import *
 from .models import Generator, Critic, ConditionalWrapper
-from .train import train_wgan, train_conditional
+from .train import train_wgan, train_conditional, train
 from .dataloaders import GeneratedData, _ohe_colnames
 
 
@@ -260,7 +260,7 @@ class SygnetModel:
         if self.mode == "wgan":
             g_loss, d_loss = train_wgan(**train_args)
         elif self.mode == "cgan":
-            g_loss, d_loss = train_conditional(**train_args)
+            g_loss, d_loss = train(**train_args, conditional = True)
         
         self.gen_losses += g_loss
         self.disc_losses += d_loss
@@ -310,12 +310,15 @@ class SygnetModel:
                 labels_num = labels.drop(labels_colnames_cat, axis = 1)
                 labels_colnames_num = labels_num.columns
 
+                seed_labels = []
+                if hasattr(self.label_encoders[1], 'n_features_in_'):
+                    seed_labels.append(self.label_encoders[1].transform(labels_num))
+                if hasattr(self.label_encoders[0], 'categories_'):
+                    seed_labels.append(self.label_encoders[0].transform(labels_cat))
+
                 seed_labels = torch.from_numpy(
                     np.concatenate(
-                        (
-                            self.label_encoders[1].transform(labels_num), 
-                            self.label_encoders[0].transform(labels_cat)
-                        ), 
+                        seed_labels, 
                         axis=1
                     )
                 ).float()
@@ -364,7 +367,7 @@ class SygnetModel:
             
             if self.mode == "cgan":
                 synth_output = np.column_stack([synth_output, seed_labels]) 
-                labels_cat_cols = _ohe_colnames(self.data_encoders[1])
+                labels_cat_cols = _ohe_colnames(self.label_encoders[0])
                 X_num_cols = self.colnames[:-(labels.shape[1]+self.data_encoders[0].n_features_in_)]
                 out_col_order = X_num_cols + X_cat_cols + labels_colnames_num.tolist() + labels_cat_cols
             else:

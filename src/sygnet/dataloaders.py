@@ -99,7 +99,8 @@ def _preprocess_df(df):
     
     # get ordered list of column names
     df_cols = df_num.columns.tolist() + categorical_cols
-    df_num = scaler.fit_transform(df_num)
+    if df_num.shape[1] > 0:
+        df_num = scaler.fit_transform(df_num)
     transformers = (OHE, scaler)
     
     # 3. finding idx for each original categorical column
