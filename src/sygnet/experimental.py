@@ -45,8 +45,6 @@ def add_treatment(data,
 
 def add_treatment_with_interaction(data,
                   outcome,
-                  proportion,
-                  seed,
                   effect=None,
                   sd=None,
                   add_interaction=False,                
