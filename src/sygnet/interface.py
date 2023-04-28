@@ -104,6 +104,16 @@ class SygnetModel:
             logger.warning("Supplying separate lists for each model was removed in v0.0.9")
             logger.error("Argument `hidden_nodes` must either be a list of hidden layer sizes, or an integer.")
 
+        # Check n_heads divisibility
+
+        if self.attention:
+            if self.n_heads is None:
+                self.n_heads = 8
+            
+            if hidden_nodes % self.n_heads != 0:
+                logger.error("`hidden_nodes` must be divisible by `n_heads`: try using values that are powers of 2 (e.g. 8,16,32,64,128,256,512,...)")
+
+
         # Get dropout proportions
         if type(dropout_p) is float:
             self.gen_dropout = self.crit_dropout = dropout_p
