@@ -352,7 +352,7 @@ class SygnetModel:
             if n_cat_vars > 0:
                 logger.debug(f"{n_cats} categorical columns to transform for {n_cat_vars} categorical variables")
                 synth_output = np.column_stack(
-                    self.data_encoders[1].inverse_transform(synth_output[:,:-n_cats]),
+                    (self.data_encoders[1].inverse_transform(synth_output[:,:-n_cats]),
                     self.data_encoders[0].inverse_transform(synth_output[:,-n_cats:]))
                 )
             else:
