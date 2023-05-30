@@ -36,7 +36,7 @@ class SygnetModel:
             hidden_nodes (int, or [int, int]): The number of nodes in each hidden layer of the generator and critic networks (default = 256). 
             dropout_p (float, or [float, float]): The proportion of hidden nodes to be dropped randomly during training from the generator and critic respectively (default = 0.2).
             relu_leak (float, or [float, float]): The negative slope parameters used to construct hidden-layer ReLU activation functions (default = 0.01)
-            n_heads (int): The number of attention heads within the self-attention mechanism (default = None).
+            n_heads (int): The number of attention heads within the self-attention mechanism (default = None; if attention = True and no value given, n_heads = 8).
             mixed_activation (boolean): Whether to use a mixed activation function final layer for the generator (default = True). If set to false, categorical and binary columns will not be properly transformed in generator output.
 
         Notes: 
@@ -101,8 +101,19 @@ class SygnetModel:
         elif type(hidden_nodes) is list and len(hidden_nodes) == 2:
             self.gen_hidden, self.crit_hidden = hidden_nodes
         else:
-            logger.warning("Supplying separate lists for each model was removed in v0.0.9")
+            logger.warning("Supplying list of lists was removed in v0.0.9")
             logger.error("Argument `hidden_nodes` must either be a list of hidden layer sizes, or an integer.")
+
+        # Check n_heads divisibility
+
+        if self.attention:
+            if self.n_heads is None:
+                self.n_heads = 8
+            
+            if self.gen_hidden % self.n_heads != 0:
+                logger.warning(f"Hidden nodes in generator blocks = {self.gen_hidden}; `n_heads` = {self.n_heads}")
+                logger.error("The generator value for `hidden_nodes` must be divisible by `n_heads`: try using values that are powers of 2 (e.g. 8,16,32,64,128,256,512,...)")
+
 
         # Get dropout proportions
         if type(dropout_p) is float:
