@@ -25,14 +25,15 @@ class _MixedActivation(nn.Module):
             logger.error("Cannot construct output layer: unrecognised mixed activation functional")
         self.indices = indices
         self.funcs = funcs
+        self.sigmoid = nn.Sigmoid()
         self.identity = nn.Identity()
         self.device = device
         
     def forward(self, input: Tensor) -> Tensor:
         mixed_out = []
         for number, index_ in enumerate(self.indices):
-            if self.funcs[number] == 'identity':
-                mixed_out.append(self.identity(torch.index_select(input, 1, index_.type(torch.int32).to(self.device))))
+            if self.funcs[number] == 'sigmoid':
+                mixed_out.append(self.sigmoid(torch.index_select(input, 1, index_.type(torch.int32).to(self.device))))
             elif self.funcs[number] == 'softmax':
                 mixed_out.append(nn.functional.gumbel_softmax(torch.index_select(input, 1, index_.type(torch.int32).to(self.device)),tau=0.66, hard=False, dim=1))
             else:
