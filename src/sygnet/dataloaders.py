@@ -110,7 +110,7 @@ def _preprocess_df(df):
     if len(numeric_cols) != 0:
         col_idx_tensor = torch.Tensor([c for c in range(len(numeric_cols))])
         col_idx.append(col_idx_tensor)
-        col_fs.append('identity')
+        col_fs.append('sigmoid')
 
     # Categorical cols idx
     n_numeric = df_num.shape[1]
