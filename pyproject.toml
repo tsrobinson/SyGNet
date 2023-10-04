@@ -5,15 +5,15 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "sygnet"
 authors = [
-    {name = "Thomas Robinson", email = "thomas.robinson@durham.ac.uk"},
+    {name = "Thomas Robinson", email = "t.robinson7@lse.ac.uk"},
 ]
 maintainers = [
-    {name = "Thomas Robinson", email = "thomas.robinson@durham.ac.uk"},
+    {name = "Thomas Robinson", email = "t.robinson7@lse.ac.uk"},
     {name = "Artem Nesterov"},
     {name = "Maksim Zubok"},
 ]
 
-version = "0.0.12"
+version = "0.0.13"
 description = "Synthetic data using Generative Adversarial Networks"
 keywords = [
     "synthetic data", 

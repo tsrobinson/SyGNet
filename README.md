@@ -29,13 +29,17 @@ To install via pip, you can run the following command at the command line:
 
 You can find a demonstration of **sygnet** under [examples/basic_example](examples/basic_example.ipynb).
 
-### Current version: 0.0.12 (alpha release)
+### Current version: 0.0.13 (alpha release)
 
 **Alpha release**: You should expect both functionality and pipelines to change (rapidly and without warning). Comments and bug reports are very welcome!
 
-Minor documentation updates including README.
+Replacing linear with sigmoid activation functions to facilitate better training, given automatic scaling of data to 0-1 space.
 
 ### Previous releases
+
+**0.0.12**
+
+Minor documentation updates including README.
 
 **0.0.11**
 
